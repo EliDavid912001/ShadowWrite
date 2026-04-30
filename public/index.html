@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Dark Script</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+Hebrew:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:#000; --card:#0E0E0E; --card2:#111;
+  --red:#8B0000; --redb:#B22222; --redg:rgba(139,0,0,0.4);
+  --gold:#D4AF37; --goldd:#A88820; --goldg:rgba(212,175,55,0.3);
+  --blue:#4A6FA5; --green:#2E8B57;
+  --b1:#1A1A1A; --b2:#252525;
+  --gr:#555; --grl:#999; --wh:#F0F0F0;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--black);color:var(--grl);font-family:'Noto Sans Hebrew',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");opacity:.5;}
+
+.wolf{position:fixed;bottom:-10px;left:-30px;width:min(80vw,480px);opacity:.045;pointer-events:none;z-index:0;transform:scaleX(-1);}
+.app{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:0 18px 80px;}
+
+/* HEADER */
+.hdr{padding:50px 0 0;text-align:center;margin-bottom:30px;}
+.eyebrow{font-size:10px;letter-spacing:.28em;color:var(--goldd);text-transform:uppercase;font-weight:700;margin-bottom:10px;}
+.title{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,12vw,68px);letter-spacing:.1em;line-height:.93;color:var(--wh);}
+.title .g{color:var(--gold);text-shadow:0 0 30px var(--goldg);}
+.rule{display:flex;align-items:center;gap:10px;margin:13px 0 11px;}
+.rule::before,.rule::after{content:'';flex:1;height:1px;}
+.rule::before{background:linear-gradient(90deg,transparent,var(--b2));}
+.rule::after{background:linear-gradient(90deg,var(--b2),transparent);}
+.diamond{width:6px;height:6px;background:var(--gold);transform:rotate(45deg);box-shadow:0 0 10px var(--goldg);}
+.subtitle{font-size:13px;color:var(--gr);font-weight:300;letter-spacing:.04em;font-style:italic;}
+.offline-badge{display:inline-flex;align-items:center;gap:6px;margin-top:12px;background:rgba(46,139,87,.08);border:1px solid rgba(46,139,87,.2);border-radius:20px;padding:5px 14px;font-size:10px;letter-spacing:.1em;color:#4EBB80;text-transform:uppercase;font-weight:700;}
+
+/* STEP */
+.slabel{font-size:10px;letter-spacing:.2em;color:var(--goldd);text-transform:uppercase;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+.snum{width:17px;height:17px;border-radius:50%;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.25);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--gold);font-weight:700;flex-shrink:0;}
+
+/* CHANNEL */
+.ch-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px;}
+.ch-btn{background:var(--card);border:1px solid var(--b2);border-radius:4px;padding:13px 10px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.ch-btn .ico{font-size:22px;}
+.ch-btn .nm{font-size:11px;font-weight:700;color:var(--grl);text-align:center;}
+.ch-btn .ds{font-size:9px;color:var(--gr);text-align:center;line-height:1.3;}
+.ch-btn.active{border-color:var(--gold);background:rgba(212,175,55,.05);}
+.ch-btn.active .nm{color:var(--gold);}
+
+/* SEARCH */
+.search-wrap{position:sticky;top:10px;z-index:100;margin-bottom:20px;}
+.search-inner{position:relative;background:#060606;border:1px solid var(--b2);border-radius:4px;box-shadow:0 8px 28px rgba(0,0,0,.5);transition:border-color .25s;}
+.search-inner:focus-within{border-color:rgba(212,175,55,.4);}
+.search-ico{position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--gr);pointer-events:none;}
+.search-inp{width:100%;background:transparent;border:none;outline:none;color:var(--wh);font-family:'Noto Sans Hebrew',sans-serif;font-size:14px;padding:14px 44px 14px 14px;direction:rtl;}
+.search-inp::placeholder{color:var(--gr);}
+
+/* TAGS */
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;}
+.tag{background:rgba(255,255,255,.03);border:1px solid var(--b2);border-radius:20px;padding:5px 11px;font-size:10px;color:var(--grl);cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'Noto Sans Hebrew',sans-serif;}
+.tag:hover{border-color:var(--goldd);color:var(--gold);background:rgba(212,175,55,.05);}
+
+/* SITUATION CARDS */
+.cards{display:flex;flex-direction:column;gap:10px;}
+.sit-card{background:var(--card);border:1px solid var(--b1);border-radius:4px;overflow:hidden;transition:border-color .2s;}
+.sit-card:hover{border-color:var(--b2);}
+.card-hdr{display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;user-select:none;}
+.card-ico{font-size:22px;flex-shrink:0;}
+.card-info{flex:1;}
+.card-cat{font-size:9px;letter-spacing:.15em;color:var(--goldd);text-transform:uppercase;font-weight:700;margin-bottom:3px;}
+.card-title{font-size:15px;font-weight:700;color:var(--wh);}
+.card-chev{color:var(--gr);transition:transform .3s,color .2s;flex-shrink:0;}
+.sit-card.open .card-chev{transform:rotate(90deg);color:var(--gold);}
+
+/* CARD BODY */
+.card-body{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.4,0,.2,1);}
+.sit-card.open .card-body{max-height:900px;}
+.card-sep{height:1px;background:var(--b1);margin:0 18px;}
+
+/* PERSONA BUTTONS */
+.persona-btns{padding:14px 16px 10px;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.pbtn{background:var(--card2);border:1px solid var(--b1);border-radius:3px;color:var(--grl);font-family:'Noto Sans Hebrew',sans-serif;font-size:11px;font-weight:700;padding:10px 10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.pbtn:hover{transform:translateY(-1px);}
+.pbtn:active{transform:scale(.97);}
+.pbtn.alpha{border-color:rgba(139,0,0,.3);}
+.pbtn.alpha:hover,.pbtn.alpha.active{border-color:var(--red);color:#FF6666;background:rgba(139,0,0,.12);box-shadow:0 0 14px rgba(139,0,0,.25);}
+.pbtn.beta{border-color:rgba(74,111,165,.25);}
+.pbtn.beta:hover,.pbtn.beta.active{border-color:#5064A0;color:#8899DD;background:rgba(74,111,165,.1);}
+.pbtn.witty{border-color:rgba(212,175,55,.2);}
+.pbtn.witty:hover,.pbtn.witty.active{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,.08);box-shadow:0 0 14px var(--goldg);}
+.pbtn.friendly{border-color:rgba(46,139,87,.2);}
+.pbtn.friendly:hover,.pbtn.friendly.active{border-color:#2EA064;color:#50D090;background:rgba(46,139,87,.08);}
+
+/* RESPONSE BOX */
+.resp-area{margin:0 16px 14px;}
+.resp-box{display:none;border-radius:3px;overflow:hidden;animation:revealBox .25s cubic-bezier(.4,0,.2,1);}
+@keyframes revealBox{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.resp-box.vis{display:block;}
+.resp-box.alpha-b{background:rgba(139,0,0,.08);border:1px solid rgba(139,0,0,.25);}
+.resp-box.beta-b{background:rgba(74,111,165,.07);border:1px solid rgba(74,111,165,.22);}
+.resp-box.witty-b{background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.18);}
+.resp-box.friendly-b{background:rgba(46,139,87,.06);border:1px solid rgba(46,139,87,.18);}
+.resp-top{display:flex;align-items:center;gap:7px;padding:10px 13px 7px;border-bottom:1px solid rgba(255,255,255,.04);}
+.rdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.alpha-b .rdot{background:var(--redb);box-shadow:0 0 6px var(--redg);}
+.beta-b  .rdot{background:var(--blue);}
+.witty-b .rdot{background:var(--gold);box-shadow:0 0 6px var(--goldg);}
+.friendly-b .rdot{background:var(--green);}
+.rtag{font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:2px 8px;border-radius:2px;}
+.alpha-b   .rtag{color:#E55;background:rgba(139,0,0,.15);border:1px solid rgba(139,0,0,.3);}
+.beta-b    .rtag{color:#7A9DDD;background:rgba(74,111,165,.12);border:1px solid rgba(74,111,165,.25);}
+.witty-b   .rtag{color:var(--gold);background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.2);}
+.friendly-b .rtag{color:#4EBB80;background:rgba(46,139,87,.1);border:1px solid rgba(46,139,87,.2);}
+.rsub{font-size:9px;color:var(--gr);}
+.resp-text{padding:12px 13px;font-size:14px;color:var(--wh);line-height:1.7;}
+.resp-foot{display:flex;justify-content:flex-end;padding:4px 13px 10px;}
+.cbtn{display:flex;align-items:center;gap:4px;background:none;border:1px solid var(--b2);color:var(--gr);font-family:'Noto Sans Hebrew',sans-serif;font-size:10px;padding:5px 11px;border-radius:2px;cursor:pointer;transition:all .18s;}
+.cbtn:hover{border-color:var(--goldd);color:var(--gold);}
+.cbtn.copied{border-color:#2ECC71;color:#2ECC71;background:rgba(46,204,113,.07);}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;display:none;}
+.empty.vis{display:block;}
+.empty-ico{font-size:36px;margin-bottom:12px;opacity:.3;}
+.empty-txt{font-size:13px;color:var(--gr);}
+
+/* AI INPUT */
+.ai-input-wrap{position:relative;background:#060606;border:1px solid var(--b2);border-radius:4px;overflow:hidden;margin-bottom:14px;transition:border-color .25s;}
+.ai-input-wrap:focus-within{border-color:rgba(212,175,55,.4);}
+.ai-ico{position:absolute;right:14px;top:16px;color:var(--gr);pointer-events:none;font-size:17px;}
+.ai-inp{width:100%;background:transparent;border:none;outline:none;color:var(--wh);font-family:"Noto Sans Hebrew",sans-serif;font-size:14px;font-weight:500;padding:14px 46px 0 14px;direction:rtl;resize:none;min-height:52px;max-height:130px;line-height:1.5;}
+.ai-inp::placeholder{color:var(--gr);font-weight:300;}
+.ai-foot{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 10px;}
+.ai-hint{font-size:9px;color:var(--gr);opacity:.6;}
+.ai-btn{display:flex;align-items:center;gap:6px;background:var(--red);border:none;border-radius:3px;color:#fff;font-family:"Noto Sans Hebrew",sans-serif;font-size:12px;font-weight:700;padding:8px 16px;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(139,0,0,.35);white-space:nowrap;}
+.ai-btn:hover:not(:disabled){background:var(--redb);transform:translateY(-1px);}
+.ai-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.ai-result{margin-bottom:20px;}
+.ai-res-hdr{margin-bottom:12px;}
+.ai-res-title{font-size:9px;letter-spacing:.2em;color:var(--goldd);text-transform:uppercase;font-weight:700;margin-bottom:4px;}
+.ai-res-sit{font-size:12px;color:var(--grl);font-style:italic;}
+.ai-cards{display:flex;flex-direction:column;gap:8px;}
+.ai-card{background:var(--card);border:1px solid var(--b1);border-radius:4px;overflow:hidden;opacity:0;transform:translateY(12px);transition:opacity .3s,transform .3s;}
+.ai-card.show{opacity:1;transform:translateY(0);}
+.ai-card-top{display:flex;align-items:center;gap:8px;padding:12px 13px 8px;border-bottom:1px solid rgba(255,255,255,.03);}
+.ai-rdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ai-card.alpha .ai-rdot{background:var(--redb);}
+.ai-card.beta  .ai-rdot{background:var(--blue);}
+.ai-card.witty .ai-rdot{background:var(--gold);}
+.ai-card.friendly .ai-rdot{background:var(--green);}
+.ai-rtag{font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;padding:2px 8px;border-radius:2px;}
+.ai-card.alpha    .ai-rtag{color:#E55;background:rgba(139,0,0,.15);border:1px solid rgba(139,0,0,.3);}
+.ai-card.beta     .ai-rtag{color:#7A9DDD;background:rgba(74,111,165,.12);border:1px solid rgba(74,111,165,.25);}
+.ai-card.witty    .ai-rtag{color:var(--gold);background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.22);}
+.ai-card.friendly .ai-rtag{color:#4EBB80;background:rgba(46,139,87,.1);border:1px solid rgba(46,139,87,.22);}
+.ai-rsub{font-size:9px;color:var(--gr);margin-right:auto;}
+.ai-body{padding:12px 13px 5px;font-size:14px;color:var(--wh);line-height:1.7;}
+.ai-body.typing::after{content:"|";display:inline-block;animation:blink .7s step-end infinite;color:var(--gold);margin-right:2px;}
+.ai-foot2{display:flex;justify-content:flex-end;padding:5px 13px 10px;}
+.ai-err{background:rgba(139,0,0,.08);border:1px solid rgba(139,0,0,.3);border-radius:4px;padding:12px 14px;font-size:12px;color:#FF6666;margin-bottom:12px;display:none;}
+.ai-err.show{display:block;}
+.ai-loading{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;display:none;}
+.ai-loading.on{display:flex;}
+.ai-lcard{background:var(--card);border:1px solid var(--b1);border-radius:4px;padding:16px;position:relative;overflow:hidden;}
+.ai-lcard::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(212,175,55,.04),transparent);background-size:200% 100%;animation:shim 1.6s ease-in-out infinite;}
+.ai-ll{height:9px;border-radius:3px;background:var(--b2);margin-bottom:7px;}
+.ai-ll.s{width:35%;}.ai-ll.m{width:65%;}.ai-ll.l{width:85%;}
+
+/* FOOTER */
+.footer{text-align:center;margin-top:48px;padding-top:18px;border-top:1px solid var(--b1);font-size:10px;letter-spacing:.18em;color:#1E1E1E;text-transform:uppercase;}
+.footer span{color:var(--goldd);}
+</style>
+</head>
+<body>
+
+<svg class="wolf" viewBox="0 0 400 380" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g fill="white">
+    <ellipse cx="200" cy="290" rx="70" ry="55"/><ellipse cx="200" cy="255" rx="45" ry="40"/>
+    <rect x="183" y="215" width="34" height="42" rx="14"/><ellipse cx="200" cy="200" rx="38" ry="36"/>
+    <polygon points="170,180 158,140 190,172"/><polygon points="230,180 242,140 210,172"/>
+    <polygon points="172,175 162,148 188,168" fill="#000" opacity="0.5"/>
+    <polygon points="228,175 238,148 212,168" fill="#000" opacity="0.5"/>
+    <ellipse cx="200" cy="218" rx="22" ry="15"/><ellipse cx="200" cy="208" rx="10" ry="7"/>
+    <rect x="162" y="310" width="22" height="60" rx="10"/><rect x="216" y="310" width="22" height="60" rx="10"/>
+    <rect x="148" y="295" width="20" height="55" rx="10" transform="rotate(-12,148,295)"/>
+    <rect x="232" y="295" width="20" height="55" rx="10" transform="rotate(12,232,295)"/>
+    <path d="M268 280 Q320 230 310 170 Q305 148 288 152 Q275 156 280 175 Q290 200 270 240 Z"/>
+    <circle cx="200" cy="70" r="46" fill="none" stroke="white" stroke-width="3"/>
+    <circle cx="226" cy="55" r="38" fill="black"/>
+    <rect x="80" y="368" width="240" height="6" rx="3"/>
+    <ellipse cx="168" cy="372" rx="14" ry="6"/><ellipse cx="222" cy="372" rx="14" ry="6"/>
+  </g>
+</svg>
+
+<div class="app">
+  <header class="hdr">
+    <div class="eyebrow">Dark Psychology · Dating</div>
+    <div class="title">THE DARK <span class="g">SCRIPT</span></div>
+    <div class="rule"><div class="diamond"></div></div>
+    <div class="subtitle">אל תחשוב. פשוט תענה.</div>
+    <div class="offline-badge">⚡ מופעל על ידי Gemini AI</div>
+  </header>
+
+  <!-- CHANNEL -->
+  <div class="slabel"><div class="snum">1</div>איפה מתנהלת השיחה?</div>
+  <div class="ch-grid">
+    <div class="ch-btn active" data-ch="app" onclick="selCh(this)"><span class="ico">📱</span><span class="nm">אפליקציית היכרויות</span><span class="ds">טינדר, באמבל וכו׳</span></div>
+    <div class="ch-btn" data-ch="whatsapp" onclick="selCh(this)"><span class="ico">💬</span><span class="nm">וואטסאפ</span><span class="ds">כבר החלפנו מספרים</span></div>
+    <div class="ch-btn" data-ch="phone" onclick="selCh(this)"><span class="ico">📞</span><span class="nm">שיחת טלפון</span><span class="ds">מה להגיד בקול</span></div>
+    <div class="ch-btn" data-ch="inperson" onclick="selCh(this)"><span class="ico">👁️</span><span class="nm">פנים מול פנים</span><span class="ds">בדייט או בפגישה</span></div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="slabel"><div class="snum">2</div>חפש סיטואציה</div>
+  <div class="search-wrap">
+    <div class="search-inner">
+      <svg class="search-ico" width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="7" cy="7" r="5.5" stroke="#555" stroke-width="1.4"/>
+        <path d="M11 11L14 14" stroke="#555" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <input class="search-inp" id="searchInp" placeholder="חפש... (חחח, גוסטינג, דייט, מוקדם מדי...)" autocomplete="off" spellcheck="false" oninput="filterCards(this.value)">
+    </div>
+  </div>
+
+  <!-- QUICK TAGS -->
+  <div class="tags" id="tagsEl"></div>
+
+  <!-- AI INPUT -->
+  <div class="slabel"><div class="snum">3</div>תאר סיטואציה בחופשיות — ה-AI יענה</div>
+  <div class="ai-input-wrap">
+    <span class="ai-ico">✍️</span>
+    <textarea class="ai-inp" id="aiInp" placeholder="לדוגמה: היא אמרה שהיא פחות אוהבת לתת מספר מוקדם..." rows="2" autocomplete="off" spellcheck="false"></textarea>
+    <div class="ai-foot">
+      <span class="ai-hint">Enter ↵ לשליחה</span>
+      <button class="ai-btn" id="aiBtn" onclick="askAI()">⚡ קבל תשובות AI</button>
+    </div>
+  </div>
+
+  <!-- AI RESULT -->
+  <div class="ai-result" id="aiResult" style="display:none">
+    <div class="ai-res-hdr">
+      <div class="ai-res-title">// תשובות AI לסיטואציה שלך</div>
+      <div class="ai-res-sit" id="aiResSit"></div>
+    </div>
+    <div class="ai-cards" id="aiCards"></div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="slabel" style="margin-top:28px"><div class="snum">4</div>או בחר מסיטואציות מוכנות</div>
+  <div class="cards" id="cardsEl"></div>
+  <div class="empty" id="emptyEl">
+    <div class="empty-ico">🔍</div>
+    <div class="empty-txt" id="emptyTxt"></div>
+  </div>
+
+  <footer class="footer">THE DARK SCRIPT &nbsp;·&nbsp; <span>PLAY THE LONG GAME</span></footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// ALL DATA LIVES HERE — NO API, NO INTERNET, NO COST
+// ═══════════════════════════════════════════════════════════
+const SITUATIONS_DATA = [
+
+  // ── אפליקציית היכרויות ──────────────────────────────────
+  {
+    id:'app_hahaha', ch:['app'], icon:'💬', cat:'אפליקציית היכרויות',
+    title:'שלחתי הי — חזר רק חחח',
+    keywords:['חחח','hahaha','lol','תגובה קצרה','צחוק'],
+    responses:{
+      alpha:  { text:'חחח זה לא תשובה. מה קורה אצלך?',  note:'קצר, לא נלהב' },
+      beta:   { text:'חחח אהבתי 😄 מה שלומך?', note:'' },
+      witty:  { text:'נגמרו המילים? אני יכול לשאיל.', note:'' },
+      friendly:{ text:'חחח אוקיי. מה קורה אצלך היום?', note:'' }
+    }
+  },
+  {
+    id:'app_nomatch', ch:['app'], icon:'💤', cat:'אפליקציית היכרויות',
+    title:'התאמנו אבל לא כתבה',
+    keywords:['התאמה','match','לא כתבה','לא התחילה'],
+    responses:{
+      alpha:  { text:'היי. ראיתי שהתאמנו — משהו תפס את העין שלי בפרופיל שלך.', note:'ספציפי, לא גנרי' },
+      beta:   { text:'היי! שמח שהתאמנו 😊 איך היה היום שלך?', note:'' },
+      witty:  { text:'היי — ראיתי שאת אחת מ-3 האנשים שעוד לא שלחו לי פרחים. מה הסיפור?', note:'' },
+      friendly:{ text:'היי, תפסת את תשומת לבי. מה קורה?', note:'' }
+    }
+  },
+  {
+    id:'app_tooearly_meet', ch:['app','whatsapp'], icon:'⏰', cat:'אפליקציית היכרויות',
+    title:'אמרה שמוקדם מדי לפגוש',
+    keywords:['מוקדם','מוקדם מדי','לא מוכנה','להכיר קודם','לפגוש'],
+    responses:{
+      alpha:  { text:'בסדר גמור. אני לא ממהר לשום מקום.', note:'אל תסביר, אל תתנצל' },
+      beta:   { text:'כמובן, אני מבין אותך לגמרי. ניכר בקצב שנוח לך.', note:'' },
+      witty:  { text:'טוב שאמרת — כי גם אני עוד לא החלטתי אם אני רוצה.', note:'' },
+      friendly:{ text:'לגמרי מכבד את זה. נכיר קצת יותר קודם.', note:'' }
+    }
+  },
+  {
+    id:'app_movetowhatsapp', ch:['app'], icon:'📲', cat:'אפליקציית היכרויות',
+    title:'רוצה לעבור לוואטסאפ',
+    keywords:['וואטסאפ','מספר','טלפון','לצאת מהאפליקציה'],
+    responses:{
+      alpha:  { text:'050XXXXXXX — כשתרצי.', note:'תן מספר בלי לבקש' },
+      beta:   { text:'כמובן! הנה המספר שלי: 050XXXXXXX 😊', note:'' },
+      witty:  { text:'רק אם את מבטיחה לא לשלוח לי מדבקות של חתולים ביום הראשון.', note:'' },
+      friendly:{ text:'בטח, הנה: 050XXXXXXX. דברי כשנוח לך.', note:'' }
+    }
+  },
+  {
+    id:'app_invite_date', ch:['app','whatsapp'], icon:'🕶️', cat:'אפליקציית היכרויות',
+    title:'רוצה להזמין לדייט ראשון',
+    keywords:['דייט','להזמין','לצאת','פגישה','לקפה'],
+    responses:{
+      alpha:  { text:'יש מקום שאני אוהב. שישי בערב — את פנויה?', note:'הצעה, לא בקשה' },
+      beta:   { text:'אולי נצא לקפה השבוע אם את רוצה? 😊', note:'' },
+      witty:  { text:'יש לי תוכנית שכוללת אוכל טוב ושיחה שלא תרצי שתיגמר. בתוך?', note:'' },
+      friendly:{ text:'בא לי להכיר אותך פנים מול פנים. מה את אומרת על קפה השבוע?', note:'' }
+    }
+  },
+
+  // ── וואטסאפ ─────────────────────────────────────────────
+  {
+    id:'wa_ghosting', ch:['whatsapp','app'], icon:'👻', cat:'וואטסאפ',
+    title:'גוסטינג — נעלמה בלי סיבה',
+    keywords:['גוסטינג','ghosting','נעלמה','לא עונה','נעלם','סינון'],
+    responses:{
+      alpha:  { text:'נכון, דברנו. אם תרצי להמשיך — את יודעת איפה אני.', note:'לא מחכה, לא מסביר' },
+      beta:   { text:'היי, הכל בסדר? לא שמעתי ממך כמה ימים.', note:'' },
+      witty:  { text:'בדקתי — ה-Wi-Fi שלי עובד מעולה. אז כנראה זה לא הכיוון.', note:'' },
+      friendly:{ text:'היי, נראה שפיספסנו. בלי לחץ — אם תרצי לדבר, אני פה.', note:'' }
+    }
+  },
+  {
+    id:'wa_read_no_reply', ch:['whatsapp'], icon:'👁️', cat:'וואטסאפ',
+    title:'ראתה ולא ענתה',
+    keywords:['ריד','ריד סיין','read','ראתה','קראה','לא ענתה'],
+    responses:{
+      alpha:  { text:'אין טעם לדחוף. כשתרצי — תענה.', note:'שלח לעצמך תזכורת, אל תשלח שוב' },
+      beta:   { text:'לא בטוח אם ראית, רק רציתי לוודא שהכל בסדר.', note:'' },
+      witty:  { text:'ריד זה לא תשובה. שניים שונים לגמרי.', note:'' },
+      friendly:{ text:'אין בעיה אם עמוסה. פני אלי כשנוח.', note:'' }
+    }
+  },
+  {
+    id:'wa_cancelled_date', ch:['whatsapp'], icon:'❌', cat:'וואטסאפ',
+    title:'ביטלה דייט ברגע האחרון',
+    keywords:['ביטול','ביטלה','cancelled','לא יכולה','דחתה','שינוי תוכנית'],
+    responses:{
+      alpha:  { text:'בסדר. כשתתכווני — תגידי.', note:'לא להתרגש, לא לשאול למה' },
+      beta:   { text:'אין בעיה! נמצא זמן אחר שיתאים לשנינו 😊', note:'' },
+      witty:  { text:'ציפיתי לתירוץ יצירתי יותר. עכשיו אני מאוכזב כפלית.', note:'' },
+      friendly:{ text:'מבין לגמרי. מתי מתאים לך לנסות שוב?', note:'' }
+    }
+  },
+  {
+    id:'wa_cold', ch:['whatsapp'], icon:'🥶', cat:'וואטסאפ',
+    title:'הפכה קרה פתאום',
+    keywords:['קרה','cold','שינתה','פחות עניין','אחרת','קצרה'],
+    responses:{
+      alpha:  { text:'שינוי אנרגיה מורגש. אני לא ממתין שתחזרי לעצמך.', note:'' },
+      beta:   { text:'מרגיש שמשהו השתנה — הכל בסדר?', note:'' },
+      witty:  { text:'קיבלת עדכון תוכנה? כי הגרסה הקודמת הייתה יותר חמה.', note:'' },
+      friendly:{ text:'אם עשיתי משהו שפגע — תגידי לי ישירות.', note:'' }
+    }
+  },
+  {
+    id:'wa_tension', ch:['whatsapp'], icon:'🔥', cat:'וואטסאפ',
+    title:'רוצה ליצור מתח לפני פגישה',
+    keywords:['מתח','ציפייה','לפני פגישה','לפני דייט','אווירה','excitement'],
+    responses:{
+      alpha:  { text:'יש משהו שרציתי להגיד לך פנים מול פנים. שישי?', note:'לא מסביר מה' },
+      beta:   { text:'ממש מצפה לראות אותך שישי! 😊', note:'' },
+      witty:  { text:'תביאי ציפיות נמוכות — אני אדאג לשאר.', note:'' },
+      friendly:{ text:'תגידי לי — מה הכי מתחשק לך לעשות שישי?', note:'' }
+    }
+  },
+  {
+    id:'wa_photo', ch:['whatsapp'], icon:'📸', cat:'וואטסאפ',
+    title:'שלחה תמונה ורוצה תגובה בסטייל',
+    keywords:['תמונה','תמונות','שלחה תמונה','photo','selfie','יפה'],
+    responses:{
+      alpha:  { text:'לא ציפיתי לזה.', note:'פחות זה יותר — שאר הדמיון' },
+      beta:   { text:'וואו, את ממש יפה! 😍', note:'' },
+      witty:  { text:'אני מנסה לחשוב על משהו חכם להגיד ולא מצליח. תקחי את זה כמחמאה.', note:'' },
+      friendly:{ text:'יפה. ממש יפה.', note:'' }
+    }
+  },
+
+  // ── שיחת טלפון ──────────────────────────────────────────
+  {
+    id:'phone_silence', ch:['phone'], icon:'🔇', cat:'שיחת טלפון',
+    title:'שיחה שקועה בשתיקות',
+    keywords:['שתיקה','שקט','תקועה','שיחה מתה','awkward'],
+    responses:{
+      alpha:  { text:'אני בסדר עם שתיקה. אגב — מה הדבר האחרון שהתרגשת ממנו?', note:'שתיקה = ביטחון' },
+      beta:   { text:'סורי על השקט... אה, אז ספרי לי על עצמך?', note:'' },
+      witty:  { text:'שתיקה מוזרה. בטח חושבת על בדיחה. תגידי.', note:'' },
+      friendly:{ text:'אוקיי, שנינו שקטים. מה עובר לך עכשיו בראש?', note:'' }
+    }
+  },
+  {
+    id:'phone_boyfriend', ch:['phone','app','whatsapp'], icon:'💔', cat:'שיחת טלפון',
+    title:'אמרה שיש לה חבר',
+    keywords:['חבר','boyfriend','יש לה חבר','קשורה','זוגית','נשואה'],
+    responses:{
+      alpha:  { text:'שאלתי אם תרצי לשתות קפה, לא אם את פנויה.', note:'' },
+      beta:   { text:'ממש מכבד את זה. תמיד כיף לדבר.', note:'' },
+      witty:  { text:'הוא מוזמן. אני אשלם על שלושה שוורמות.', note:'' },
+      friendly:{ text:'מעריך שאמרת. נדבר כחברים?', note:'' }
+    }
+  },
+  {
+    id:'phone_serious', ch:['phone','whatsapp','app'], icon:'❓', cat:'שיחת טלפון',
+    title:'שאלה אם אני מחפש משהו רציני',
+    keywords:['רציני','מה מחפש','מה אתה מחפש','כוונות','זוגיות','serious'],
+    responses:{
+      alpha:  { text:'אני מחפש מישהי שאני רוצה לבלות איתה זמן. פשוט.', note:'לא להתחייב, לא להתחמק' },
+      beta:   { text:'כן, אני בהחלט פתוח למשהו רציני עם האדם הנכון.', note:'' },
+      witty:  { text:'תלוי בשאלה אם את האדם הנכון.', note:'' },
+      friendly:{ text:'אני לא מחפש סתם להעביר זמן. כן, רציני — אם זה הכיוון הנכון.', note:'' }
+    }
+  },
+  {
+    id:'phone_busy', ch:['phone','whatsapp'], icon:'📅', cat:'שיחת טלפון',
+    title:'היא אומרת שהיא עסוקה תמיד',
+    keywords:['עסוקה','אין לי זמן','אני עמוסה','לא מתאים','אין זמן'],
+    responses:{
+      alpha:  { text:'בסדר. כשיתפנה לך — תגידי.', note:'אל תציע אלטרנטיבות' },
+      beta:   { text:'לגמרי מבין, בוא נמצא זמן שמתאים לשנינו!', note:'' },
+      witty:  { text:'אני מוסיף את עצמי לרשימת ההמתנה שלך.', note:'' },
+      friendly:{ text:'אין בעיה. מתי בערך נפתח לך?', note:'' }
+    }
+  },
+
+  // ── פנים מול פנים ────────────────────────────────────────
+  {
+    id:'ip_question', ch:['inperson'], icon:'💬', cat:'פנים מול פנים',
+    title:'שאלה אותי שאלה אישית בדייט',
+    keywords:['שאלה אישית','שאלה','הדייט','בדייט','מה אתה','מי אתה'],
+    responses:{
+      alpha:  { text:'תלוי — איזה חלק ממני אתה רוצה להכיר?', note:'הפוך את השאלה' },
+      beta:   { text:'שאלה טובה! אז אני...', note:'' },
+      witty:  { text:'זו שאלה של ראיון עבודה או דייט? כי התשובה שלי שונה.', note:'' },
+      friendly:{ text:'שאלה הוגנת. אז בגדול...', note:'' }
+    }
+  },
+  {
+    id:'ip_tooquick', ch:['inperson','whatsapp'], icon:'⚡', cat:'פנים מול פנים',
+    title:'אמרה שאנחנו מהירים מדי',
+    keywords:['מהירים','מוקדם','מהר','לאט','להאט','slow down'],
+    responses:{
+      alpha:  { text:'בסדר גמור. אני לא הולך לשום מקום.', note:'ביטחון, לא התנצלות' },
+      beta:   { text:'צודקת, סורי — אני לוקח צעד אחורה.', note:'' },
+      witty:  { text:'הייתי מתווכח, אבל אני לא בטוח שאתה צודקת.', note:'' },
+      friendly:{ text:'תודה שאמרת. נלך בקצב שלך.', note:'' }
+    }
+  },
+  {
+    id:'ip_split_bill', ch:['inperson'], icon:'💳', cat:'פנים מול פנים',
+    title:'ביקשה לשלם חצי בדייט',
+    keywords:['לשלם','חצי','חשבון','bill','לחצות','dutch'],
+    responses:{
+      alpha:  { text:'אני מזמין, את מוזמנת.', note:'קצר וסופי' },
+      beta:   { text:'בטח, אין בעיה! נחצה.', note:'' },
+      witty:  { text:'הפעם אני. בפעם הבאה — את.', note:'' },
+      friendly:{ text:'השבוע אני — בפעם הבאה נחשב.', note:'' }
+    }
+  },
+  {
+    id:'ip_end_date', ch:['inperson'], icon:'🌙', cat:'פנים מול פנים',
+    title:'סיום דייט מוצלח — מה אומרים',
+    keywords:['סיום','לסיים','להיפרד','סוף דייט','לפני שהולכת','goodbye'],
+    responses:{
+      alpha:  { text:'היה כיף. נדבר.', note:'עוזב ראשון, לא מתחנן להמשך' },
+      beta:   { text:'היה ממש נחמד! אשמח לעשות את זה שוב 😊', note:'' },
+      witty:  { text:'אוקיי, הצלחת לגרום לי לרצות דייט שני. מזל טוב.', note:'' },
+      friendly:{ text:'נהניתי מאוד. נדבר מחר?', note:'' }
+    }
+  },
+  {
+    id:'ip_invite_home', ch:['inperson','whatsapp'], icon:'🏠', cat:'פנים מול פנים',
+    title:'רוצה לקרוא לה אחרי דייט',
+    keywords:['לקרוא','אלי','הביתה','אחרי דייט','לבוא','להמשיך'],
+    responses:{
+      alpha:  { text:'יש לי בקבוק יין טוב בבית. אם את רוצה.', note:'הצעה, לא בקשה — לא לפרש' },
+      beta:   { text:'אולי תרצי להמשיך אצלי? אם את בנוח כמובן...', note:'' },
+      witty:  { text:'יש לי נטפליקס ופיצריה פתוחה. שתי סיבות לבוא.', note:'' },
+      friendly:{ text:'לא רוצה שהערב ייגמר. בא לי שתבואי אלי.', note:'' }
+    }
+  },
+  {
+    id:'ip_attract_interest', ch:['inperson'], icon:'✨', cat:'פנים מול פנים',
+    title:'רוצה להביע עניין בלי להיות נואש',
+    keywords:['עניין','לגלות עניין','אני מוצא','להביע','attracted','נמשך'],
+    responses:{
+      alpha:  { text:'יש משהו בך שתפס אותי.', note:'לא להסביר מה — שתדמיין' },
+      beta:   { text:'ממש נהנה לדבר איתך, את מעניינת!', note:'' },
+      witty:  { text:'אני בדרך כלל לא מוצא אנשים מעניינים. קח את זה כמחמאה.', note:'' },
+      friendly:{ text:'להיות ישר — את מושכת אותי. רציתי שתדעי.', note:'' }
+    }
+  },
+
+  // ── כלליים ──────────────────────────────────────────────
+  {
+    id:'gen_compliment', ch:['app','whatsapp','phone','inperson'], icon:'✨', cat:'כלליים',
+    title:'היא נתנה לי מחמאה',
+    keywords:['מחמאה','יפה','חמוד','נחמד','כיפי','compliment','מגניב'],
+    responses:{
+      alpha:  { text:'עוד לא ראית כלום.', note:'' },
+      beta:   { text:'תודה, זה נחמד לשמוע ממך 😊', note:'' },
+      witty:  { text:'אני יודע. אבל שמח שגם את שמת לב.', note:'' },
+      friendly:{ text:'תודה! את גם לא ממש משעממת, אם להיות כנים.', note:'' }
+    }
+  },
+  {
+    id:'gen_intimacy_early', ch:['whatsapp','app'], icon:'🌙', cat:'כלליים',
+    title:'אמרה שמוקדם מדי לאינטימיות',
+    keywords:['מוקדם מדי','אינטימיות','לא מוכנה','עוד לא','זמן','להאט'],
+    responses:{
+      alpha:  { text:'בסדר גמור. אני לא ממהר.', note:'אל תסביר, אל תתנצל' },
+      beta:   { text:'לגמרי מכבד את זה, נלך בקצב שנוח לך.', note:'' },
+      witty:  { text:'טוב שאמרת — כי גם אני עוד לא גמרתי להחליט.', note:'' },
+      friendly:{ text:'מעריך שאמרת ישירות. אין לחץ בכלל.', note:'' }
+    }
+  },
+  {
+    id:'gen_interest_intimacy', ch:['whatsapp','inperson'], icon:'🔥', cat:'כלליים',
+    title:'רוצה להביע עניין באינטימיות בצורה ישירה',
+    keywords:['עניין','אינטימיות','להביע עניין','נמשך','attracted','כימיה','chemistry'],
+    responses:{
+      alpha:  { text:'יש כימיה בינינו שאי אפשר להתעלם ממנה.', note:'עובדה, לא בקשה' },
+      beta:   { text:'אני מרגיש שיש בינינו משהו... אולי נבדוק את זה?', note:'' },
+      witty:  { text:'אני בדרך כלל ממש עצמאי. מוזר שאני לא רוצה שהמסיבה הזו תיגמר.', note:'' },
+      friendly:{ text:'להיות ישר — נמשך אליך. שמח שיצאנו.', note:'' }
+    }
+  }
+];
+
+// ═══════════════════════════════════════════════════════════
+// APP LOGIC
+// ═══════════════════════════════════════════════════════════
+
+const QUICK_TAGS = ['חחח','גוסטינג','יש לה חבר','ביטלה דייט','ריד סיין','מוקדם מדי','להזמין לדייט','שתיקות','מחמאה','אינטימיות'];
+const PERSONA_INFO = {
+  alpha:   { label:'אלפא 🐺', sub:'בן אדם. לא חכם מקלדת.', boxCls:'alpha-b' },
+  beta:    { label:'בטא 🕊️',  sub:'רך / מנומס',             boxCls:'beta-b' },
+  witty:   { label:'שנון ⚡',  sub:'חכם / מצחיק',            boxCls:'witty-b' },
+  friendly:{ label:'חברי 🤝', sub:'כנה / ישיר',              boxCls:'friendly-b' },
+};
+
+let curCh = 'app';
+
+// Render quick tags
+document.getElementById('tagsEl').innerHTML = QUICK_TAGS.map(t =>
+  `<div class="tag" onclick="quickSearch('${t}')">${t}</div>`
+).join('');
+
+function quickSearch(q) {
+  document.getElementById('searchInp').value = q;
+  filterCards(q);
+}
+
+function selCh(el) {
+  document.querySelectorAll('.ch-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  curCh = el.dataset.ch;
+  filterCards(document.getElementById('searchInp').value);
+}
+
+function buildDynamicCard(situation) {
+  const chNames = { app:'אפליקציית היכרויות', whatsapp:'וואטסאפ', phone:'שיחת טלפון', inperson:'פנים מול פנים' };
+  // תשובות גנריות לפי מילות מפתח בסיטואציה
+  const s = situation.toLowerCase();
+  let alpha = 'בסדר גמור.', beta = 'מבין אותך.', witty = 'לא ציפיתי לזה.', friendly = 'תודה שאמרת.';
+  if (s.includes('חחח') || s.includes('lol') || s.includes('haha')) {
+    alpha = 'חחח זה לא תשובה. מה קורה אצלך?'; beta = 'חחח אהבתי 😄'; witty = 'נגמרו המילים? אני יכול לשאיל.'; friendly = 'חחח. מה עושה?';
+  } else if (s.includes('גוסט') || s.includes('נעלמ') || s.includes('לא עונ')) {
+    alpha = 'כשתרצי להמשיך — את יודעת איפה אני.'; beta = 'הכל בסדר? לא שמעתי ממך.'; witty = 'ה-Wi-Fi שלי עובד. אז כנראה זה לא הכיוון.'; friendly = 'אין בעיה — פני אלי כשנוח.';
+  } else if (s.includes('ביטל') || s.includes('לא יכול') || s.includes('לדחות')) {
+    alpha = 'בסדר. כשתתכווני — תגידי.'; beta = 'אין בעיה! נמצא זמן אחר.'; witty = 'ציפיתי לתירוץ יצירתי יותר.'; friendly = 'מבין. מתי מתאים לך?';
+  } else if (s.includes('חבר') || s.includes('boyfriend') || s.includes('קשורה')) {
+    alpha = 'שאלתי לקפה, לא אם את פנויה.'; beta = 'מכבד את זה. תמיד כיף לדבר.'; witty = 'הוא מוזמן. אני אשלם על שלושה שוורמות.'; friendly = 'מעריך שאמרת. נדבר כחברים?';
+  } else if (s.includes('מוקדם') || s.includes('מהיר') || s.includes('לאט')) {
+    alpha = 'בסדר גמור. אני לא ממהר.'; beta = 'לגמרי מבין, נלך בקצב שלך.'; witty = 'גם אני לא החלטתי עדיין.'; friendly = 'מעריך שאמרת. אין לחץ.';
+  } else if (s.includes('דייט') || s.includes('לצאת') || s.includes('להיפגש')) {
+    alpha = 'שישי בערב — את פנויה?'; beta = 'אולי נצא לקפה השבוע? 😊'; witty = 'יש לי תוכנית שלא תרצי שתיגמר. בתוך?'; friendly = 'בא לי להכיר אותך פנים מול פנים.';
+  } else if (s.includes('קרה') || s.includes('שינית') || s.includes('אחרת')) {
+    alpha = 'שינוי אנרגיה מורגש.'; beta = 'הכל בסדר? מרגיש שמשהו השתנה.'; witty = 'קיבלת עדכון תוכנה?'; friendly = 'אם עשיתי משהו — תגידי לי ישירות.';
+  } else if (s.includes('תמונ') || s.includes('photo') || s.includes('selfie')) {
+    alpha = 'לא ציפיתי לזה.'; beta = 'וואו, יפה מאוד! 😍'; witty = 'מנסה לחשוב על משהו חכם ולא מצליח.'; friendly = 'יפה. ממש יפה.';
+  } else if (s.includes('רציני') || s.includes('מה מחפש') || s.includes('כוונות')) {
+    alpha = 'אני מחפש מישהי שאני רוצה לבלות איתה זמן.'; beta = 'כן, פתוח למשהו רציני עם האדם הנכון.'; witty = 'תלוי אם את האדם הנכון.'; friendly = 'לא מחפש להעביר זמן. כן, רציני.';
+  }
+  return {
+    id: 'dyn_' + Date.now(),
+    ch: [curCh],
+    icon: '💡',
+    cat: chNames[curCh] || 'כלליים',
+    title: situation,
+    keywords: [],
+    responses: {
+      alpha:   { text: alpha,   note: '' },
+      beta:    { text: beta,    note: '' },
+      witty:   { text: witty,   note: '' },
+      friendly:{ text: friendly,note: '' }
+    }
+  };
+}
+
+function filterCards(query) {
+  const q = query.trim().toLowerCase();
+  let filtered = SITUATIONS_DATA.filter(s => {
+    const chMatch = s.ch.includes(curCh);
+    if (!q) return chMatch;
+    return chMatch && (
+      s.title.includes(q) ||
+      s.cat.includes(q) ||
+      s.keywords.some(k => k.includes(q)) ||
+      Object.values(s.responses).some(r => r.text.includes(q))
+    );
+  });
+  // תמיד מחזיר תוצאה — אם אין התאמה בונה כרטיס דינמי
+  if (filtered.length === 0 && q) {
+    filtered = [buildDynamicCard(query.trim())];
+  }
+  renderCards(filtered, q);
+}
+
+function renderCards(list, q) {
+  const container = document.getElementById('cardsEl');
+  const empty = document.getElementById('emptyEl');
+  empty.classList.remove('vis');
+  container.innerHTML = list.map((s, idx) => `
+    <div class="sit-card" id="card-${s.id}" style="animation:cardIn .35s ${idx*0.05}s both">
+      <div class="card-hdr" onclick="toggleCard('${s.id}')">
+        <span class="card-ico">${s.icon}</span>
+        <div class="card-info">
+          <div class="card-cat">${s.cat}</div>
+          <div class="card-title">${s.title}</div>
+        </div>
+        <svg class="card-chev" width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-sep"></div>
+        <div class="persona-btns">
+          <button class="pbtn alpha" onclick="showResp('${s.id}','alpha',this)">🐺 אלפא</button>
+          <button class="pbtn beta"  onclick="showResp('${s.id}','beta',this)">🕊️ בטא</button>
+          <button class="pbtn witty" onclick="showResp('${s.id}','witty',this)">⚡ שנון</button>
+          <button class="pbtn friendly" onclick="showResp('${s.id}','friendly',this)">🤝 חברי</button>
+        </div>
+        <div class="resp-area">
+          ${['alpha','beta','witty','friendly'].map(p => {
+            const r = s.responses[p];
+            const pi = PERSONA_INFO[p];
+            return `<div class="resp-box ${pi.boxCls}" id="resp-${s.id}-${p}">
+              <div class="resp-top">
+                <div class="rdot"></div>
+                <span class="rtag">${pi.label}</span>
+                <span class="rsub">${pi.sub}</span>
+              </div>
+              ${p==='alpha' && r.note ? `<div style="padding:4px 13px 6px;font-size:9px;color:rgba(200,80,80,.5);font-style:italic;">🎯 ${r.note}</div>` : ''}
+              <div class="resp-text">${r.text}</div>
+              <div class="resp-foot">
+                <button class="cbtn" onclick="doCopy(this,'${escAttr(r.text)}')">
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.1"/><path d="M2.5 8H2a1 1 0 01-1-1V2a1 1 0 011-1h5a1 1 0 011 1v.5" stroke="currentColor" stroke-width="1.1"/></svg>
+                  העתק
+                </button>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleCard(id) {
+  const card = document.getElementById(`card-${id}`);
+  const isOpen = card.classList.contains('open');
+  document.querySelectorAll('.sit-card.open').forEach(c => {
+    if (c.id !== `card-${id}`) {
+      c.classList.remove('open');
+      c.querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
+      c.querySelectorAll('.resp-box').forEach(b => b.classList.remove('vis'));
+    }
+  });
+  card.classList.toggle('open', !isOpen);
+  if (isOpen) {
+    card.querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
+    card.querySelectorAll('.resp-box').forEach(b => b.classList.remove('vis'));
+  }
+}
+
+function showResp(cardId, persona, btn) {
+  const card = document.getElementById(`card-${cardId}`);
+  const respEl = document.getElementById(`resp-${cardId}-${persona}`);
+  const isVis = respEl.classList.contains('vis');
+  card.querySelectorAll('.resp-box').forEach(b => b.classList.remove('vis'));
+  card.querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
+  if (!isVis) {
+    respEl.classList.add('vis');
+    btn.classList.add('active');
+  }
+}
+
+function doCopy(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6L5 9.5L10.5 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> הועתק!`;
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.1"/><path d="M2.5 8H2a1 1 0 01-1-1V2a1 1 0 011-1h5a1 1 0 011 1v.5" stroke="currentColor" stroke-width="1.1"/></svg> העתק`;
+    }, 2000);
+  });
+}
+
+function escAttr(s) { return s.replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
+
+// Card animation
+const styleEl = document.createElement('style');
+styleEl.textContent = `@keyframes cardIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}`;
+document.head.appendChild(styleEl);
+
+// Initial render
+filterCards('');
+
+// ── AI INPUT LOGIC ────────────────────────────────────
+const AI_PERSONAS = [
+  { key:'alpha',    label:'אלפא 🐺', sub:'בן אדם. לא חכם מקלדת.' },
+  { key:'beta',     label:'בטא 🕊️',  sub:'רך / מנומס' },
+  { key:'witty',    label:'שנון ⚡',  sub:'חכם / מצחיק' },
+  { key:'friendly', label:'חברי 🤝', sub:'כנה / ישיר' },
+];
+
+const aiInp = document.getElementById('aiInp');
+aiInp.addEventListener('input', () => {
+  aiInp.style.height = 'auto';
+  aiInp.style.height = Math.min(aiInp.scrollHeight, 130) + 'px';
+});
+aiInp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askAI(); }
+});
+
+let aiLoading = false;
+
+async function askAI() {
+  const situation = aiInp.value.trim();
+  if (!situation || aiLoading) return;
+
+  aiLoading = true;
+  const btn = document.getElementById('aiBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ מחשב...';
+
+  hideAIErr();
+  showAILoad(true);
+  document.getElementById('aiResult').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ situation, channel: curCh })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'שגיאה לא ידועה');
+
+    showAILoad(false);
+    renderAICards(data.responses, situation);
+
+  } catch(err) {
+    showAILoad(false);
+    showAIErr(err.message);
+  } finally {
+    aiLoading = false;
+    btn.disabled = false;
+    btn.innerHTML = '⚡ קבל תשובות AI';
+  }
+}
+
+function renderAICards(responses, situation) {
+  const result = document.getElementById('aiResult');
+  const cards = document.getElementById('aiCards');
+  document.getElementById('aiResSit').textContent = '"' + situation + '"';
+  result.style.display = 'block';
+  cards.innerHTML = '';
+
+  window._aiResponses = responses;
+
+  AI_PERSONAS.forEach((p, i) => {
+    const txt = responses[p.key] || '—';
+    const d = document.createElement('div');
+    d.className = 'ai-card ' + p.key;
+    d.innerHTML = `
+      <div class="ai-card-top">
+        <div class="ai-rdot"></div>
+        <span class="ai-rtag">${p.label}</span>
+        <span class="ai-rsub">${p.sub}</span>
+      </div>
+      <div class="ai-body" id="aib-${p.key}"></div>
+      <div class="ai-foot2">
+        <button class="cbtn" onclick="aiCopy('${p.key}')">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.1"/><path d="M2.5 8H2a1 1 0 01-1-1V2a1 1 0 011-1h5a1 1 0 011 1v.5" stroke="currentColor" stroke-width="1.1"/></svg>
+          העתק
+        </button>
+      </div>`;
+    cards.appendChild(d);
+    setTimeout(() => {
+      d.classList.add('show');
+      typeAI(document.getElementById('aib-' + p.key), txt);
+    }, i * 100);
+  });
+
+  result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function typeAI(el, txt, spd=15) {
+  el.classList.add('typing'); el.textContent = ''; let i = 0;
+  const iv = setInterval(() => {
+    el.textContent += txt[i++];
+    if (i >= txt.length) { clearInterval(iv); el.classList.remove('typing'); }
+  }, spd);
+}
+
+function aiCopy(key) {
+  const t = window._aiResponses?.[key]; if (!t) return;
+  navigator.clipboard.writeText(t).then(() => {
+    const btns = document.querySelectorAll('.ai-foot2 .cbtn');
+    btns.forEach(b => {
+      if (b.closest('.ai-card').classList.contains(key)) {
+        b.classList.add('copied');
+        b.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6L5 9.5L10.5 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg> הועתק!';
+        setTimeout(() => {
+          b.classList.remove('copied');
+          b.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="3.5" y="3.5" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.1"/><path d="M2.5 8H2a1 1 0 01-1-1V2a1 1 0 011-1h5a1 1 0 011 1v.5" stroke="currentColor" stroke-width="1.1"/></svg> העתק';
+        }, 2000);
+      }
+    });
+  });
+}
+
+function showAILoad(v) {
+  let ld = document.getElementById('aiLoadBlock');
+  if (!ld) {
+    ld = document.createElement('div');
+    ld.id = 'aiLoadBlock';
+    ld.className = 'ai-loading';
+    ld.innerHTML = `
+      <div class="ai-lcard"><div class="ai-ll s"></div><div class="ai-ll l"></div><div class="ai-ll m"></div></div>
+      <div class="ai-lcard"><div class="ai-ll s"></div><div class="ai-ll l"></div><div class="ai-ll m"></div></div>
+      <div class="ai-lcard"><div class="ai-ll s"></div><div class="ai-ll l"></div></div>
+      <div class="ai-lcard"><div class="ai-ll s"></div><div class="ai-ll l"></div></div>`;
+    document.getElementById('aiResult').before(ld);
+  }
+  ld.classList.toggle('on', v);
+}
+
+function showAIErr(msg) {
+  let err = document.getElementById('aiErrBox');
+  if (!err) {
+    err = document.createElement('div');
+    err.id = 'aiErrBox';
+    err.className = 'ai-err';
+    document.getElementById('aiResult').before(err);
+  }
+  err.textContent = '⚠️ ' + msg;
+  err.classList.add('show');
+}
+
+function hideAIErr() {
+  const err = document.getElementById('aiErrBox');
+  if (err) err.classList.remove('show');
+}
+</script>
+</body>
+</html>
