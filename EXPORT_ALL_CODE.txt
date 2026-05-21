@@ -1,0 +1,1988 @@
+# THE DARK SCRIPT - FULL CODE EXPORT
+
+
+================================================================================
+FILE: public\index.html
+================================================================================
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0B0F">
+  <title>The Dark Script · VIP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .nav-icon { font-size: 20px; line-height: 1; }
+    .vip-pill { font-size: 9px; }
+  </style>
+</head>
+<body>
+  <div id="boot-error" class="boot-error hidden" role="alert"></div>
+  <div class="noise-overlay" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <header class="top-bar">
+      <div class="brand-mini">DARK <span>SCRIPT</span></div>
+      <span class="vip-pill">👑 VIP</span>
+    </header>
+
+    <main>
+      <section id="view-analyze" class="view" aria-label="מנוע תשובות">
+        <div id="mount-analyze"></div>
+      </section>
+
+      <section id="view-truth" class="view active" aria-label="אמת או חובה">
+        <div class="section-eyebrow">Truth or Dare</div>
+        <h2 class="section-title">אמת או חובה</h2>
+        <p class="section-desc">סובב את הבקבוק — קבל מתח לדייט.</p>
+        <div id="mount-truth"></div>
+      </section>
+
+      <section id="view-sim" class="view" aria-label="סימולטור אלפא">
+        <div id="mount-sim"></div>
+      </section>
+
+      <section id="view-vip" class="view" aria-label="מדריכי VIP">
+        <div id="mount-vip"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="ניווט">
+      <button type="button" class="nav-btn" data-view="analyze">
+        <span class="nav-icon">💬</span>
+        <span>תשובות</span>
+      </button>
+      <button type="button" class="nav-btn active" data-view="truth">
+        <span class="nav-icon">🍾</span>
+        <span>אמת/חובה</span>
+      </button>
+      <button type="button" class="nav-btn" data-view="sim">
+        <span class="nav-icon">🐛</span>
+        <span>אלפא</span>
+      </button>
+      <button type="button" class="nav-btn vip-tab" data-view="vip">
+        <span class="nav-icon">📖</span>
+        <span>VIP</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="/app.bundle.js" defer></script>
+</body>
+</html>
+
+
+================================================================================
+FILE: public\app.bundle.js
+================================================================================
+/* The Dark Script VIP — single bundle (no ES modules, no CDN deps) */
+(function () {
+  'use strict';
+
+  if (location.protocol === 'file:') {
+    document.body.innerHTML =
+      '<div style="padding:24px;text-align:center;font-family:sans-serif;color:#ff2a54;max-width:400px;margin:40px auto">' +
+      '<h1 style="color:#fff">The Dark Script</h1>' +
+      '<p>אל תפתח את הקובץ ישירות.</p>' +
+      '<p>הרץ בטרמינל: <code style="background:#16161e;padding:4px 8px;border-radius:4px">npm run dev</code></p>' +
+      '<p>ואז פתח: <a href="http://localhost:3000" style="color:#ffb800">http://localhost:3000</a></p></div>';
+    return;
+  }
+
+  const TRUTH_PROMPTS = [
+    'ספרי על הפעם האחרונה שחשבת על מישהו אחרת בזמן דייט — בלי לייפות.',
+    'מה הדבר הכי פחדני שאת מסתירה מאנשים שמושכים אותך?',
+    'אם היינו לבד עכשיו — מה היית עושה קודם: מדברת או נוגעת?',
+    'דרגי את עצמך 1-10 — כמה את באמת פתוחה לסכנה רגשית הערב?',
+    'מה המשפט שגבר אמר לך ועדיין חוזר לך בראש?'
+  ];
+  const DARE_PROMPTS = [
+    'שמרי קשר עין 10 שניות — בלי לצחוק, בלי להסביר למה.',
+    'תני לי שאלה שאת מפחדת לשאול אותי — עכשיו.',
+    'תארי איך היית רוצה שיגעו בך — במשפט אחד, ישיר.',
+    'הציעי פעילות ל-20 דקות שתעלה את המתח — בלי "נלך לקפה".'
+  ];
+  const SITUATIONS = [
+    { id: 'haha', ch: ['app'], icon: '💬', title: 'חזר רק חחח', keywords: ['חחח'],
+      responses: { alpha: 'חחח זה לא תשובה. מה קורה אצלך?', beta: 'חחח אהבתי 😄', witty: 'נגמרו המילים?', friendly: 'חחח. מה עושה?' }},
+    { id: 'ghost', ch: ['whatsapp', 'app'], icon: '👻', title: 'גוסטינג', keywords: ['גוסטינג'],
+      responses: { alpha: 'אם תרצי להמשיך — את יודעת איפה אני.', beta: 'הכל בסדר?', witty: 'ה-Wi-Fi שלי עובד.', friendly: 'פני אלי כשנוח.' }},
+    { id: 'early', ch: ['app', 'whatsapp'], icon: '⏰', title: 'מוקדם מדי לפגוש', keywords: ['מוקדם'],
+      responses: { alpha: 'בסדר. אני לא ממהר.', beta: 'מבין לגמרי.', witty: 'גם אני לא החלטתי.', friendly: 'נכיר קודם.' }}
+  ];
+  const QUICK_TAGS = ['חחח', 'גוסטינג', 'מוקדם מדי', 'דייט'];
+  const PERSONAS = {
+    alpha: { label: 'אלפא', sub: 'רגוע · קצר' },
+    beta: { label: 'בטא', sub: 'רך · מתנצל' },
+    witty: { label: 'שנון', sub: 'עוקץ' },
+    friendly: { label: 'חברי', sub: 'חם · ישיר' }
+  };
+  const GUIDES = [
+    { id: 'b', title: 'מדריך לבתול', sub: 'ביטחון וערך עצמי', body: '<h4>שבירת חרדה</h4><ul><li>נוכחות > מושלמות</li><li>שאלה אחת + שתיקה</li></ul><h4>בלי פדסטל</h4><ul><li>היא בן אדם, לא פרס</li><li>אל תוכיח קיום</li></ul>' },
+    { id: 'm', title: 'סקס בנישואין', sub: 'מתח וקוטביות', body: '<h4>פרסים לסירוגין</h4><ul><li>ערבים לא צפויים</li><li>שינוי אנרגיה</li></ul>' },
+    { id: 's', title: 'איך לא לגמור מהר', sub: 'Edging ונשימה', body: '<h4>פיזי</h4><ul><li>Edging 3-4 מחזורים</li><li>Reverse Kegels + נשיפה</li></ul>' }
+  ];
+
+  async function postJson(url, body) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    let data = {};
+    try { data = await res.json(); } catch { data = { error: 'תשובה לא תקינה' }; }
+    if (!res.ok) throw new Error(data.error || 'שגיאה ' + res.status);
+    return data;
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  function switchView(id) {
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+    document.querySelectorAll('.nav-btn').forEach(function (b) { b.classList.remove('active'); });
+    var view = $('view-' + id);
+    var nav = document.querySelector('.nav-btn[data-view="' + id + '"]');
+    if (view) view.classList.add('active');
+    if (nav) nav.classList.add('active');
+  }
+
+  /* ── Truth or Dare ── */
+  function initTruth(root) {
+    var mode = 'random', spinning = false, rotationY = 0, rafId = null;
+    root.innerHTML =
+      '<div class="tod-mode-toggle">' +
+      '<button type="button" class="mode-chip active" data-mode="random">🎲 אקראי</button>' +
+      '<button type="button" class="mode-chip" data-mode="truth">אמת</button>' +
+      '<button type="button" class="mode-chip" data-mode="dare">חובה</button></div>' +
+      '<div class="card card-pad tod-arena"><div class="tod-scene"><div class="tod-spinner" id="todSpinner">' +
+      '<div class="tod-ring"><div class="tod-label truth">אמת</div><div class="tod-label dare">חובה</div></div>' +
+      '<div class="bottle-group" id="todBottle"><div class="bottle-body"><div class="bottle-cork"></div>' +
+      '<div class="bottle-neck"></div><div class="bottle-glass"></div></div></div><div class="tod-floor"></div></div></div>' +
+      '<button type="button" class="btn-primary" id="todSpinBtn">🍾 סובב את הבקבוק</button>' +
+      '<div class="tod-result" id="todResult"><div class="tod-result-card" id="todResultCard">' +
+      '<div class="tod-result-type" id="todResultType"></div><p class="tod-result-text" id="todResultText"></p></div></div></div>';
+
+    var spinner = root.querySelector('#todSpinner');
+    var bottle = root.querySelector('#todBottle');
+    var spinBtn = root.querySelector('#todSpinBtn');
+    var resultEl = root.querySelector('#todResult');
+    var resultCard = root.querySelector('#todResultCard');
+    var resultType = root.querySelector('#todResultType');
+    var resultText = root.querySelector('#todResultText');
+
+    function applyRot(deg) {
+      rotationY = deg;
+      spinner.style.transform = 'rotateY(' + deg + 'deg)';
+      bottle.style.transform = 'rotateY(' + (deg * 0.6) + 'deg)';
+    }
+    applyRot(0);
+
+    root.querySelectorAll('.mode-chip').forEach(function (chip) {
+      chip.onclick = function () {
+        if (spinning) return;
+        root.querySelectorAll('.mode-chip').forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        mode = chip.dataset.mode;
+      };
+    });
+
+    spinBtn.onclick = function () {
+      if (spinning) return;
+      spinning = true;
+      spinBtn.disabled = true;
+      resultEl.classList.remove('reveal');
+      var outcome = mode === 'truth' ? 'truth' : mode === 'dare' ? 'dare' : (Math.random() < 0.5 ? 'truth' : 'dare');
+      var target = outcome === 'truth' ? 0 : 180;
+      var cur = ((rotationY % 360) + 360) % 360;
+      var delta = target - cur;
+      if (delta < 0) delta += 360;
+      var finalR = rotationY + (4 + Math.floor(Math.random() * 3)) * 360 + delta;
+      var startR = rotationY, dur = 2600, t0 = performance.now();
+      function tick(now) {
+        var t = Math.min(1, (now - t0) / dur);
+        var eased = 1 - Math.pow(1 - t, 3.2);
+        applyRot(startR + (finalR - startR) * eased);
+        if (t < 1) rafId = requestAnimationFrame(tick);
+        else {
+          spinning = false;
+          spinBtn.disabled = false;
+          var pool = outcome === 'truth' ? TRUTH_PROMPTS : DARE_PROMPTS;
+          resultCard.className = 'tod-result-card ' + outcome + '-type';
+          resultType.textContent = outcome === 'truth' ? '⚡ אמת' : '🔥 חובה';
+          resultText.textContent = pool[Math.floor(Math.random() * pool.length)];
+          resultEl.classList.add('reveal');
+        }
+      }
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(tick);
+    };
+  }
+
+  /* ── Analyze ── */
+  function initAnalyze(root) {
+    var curCh = 'app', loading = false;
+    root.innerHTML =
+      '<div class="section-eyebrow">4 Archetypes</div><h2 class="section-title">מנוע התשובות</h2>' +
+      '<p class="section-desc">תאר סיטואציה — 4 ארכיטיפים קשיחים.</p>' +
+      '<div class="ch-grid" id="chGrid">' +
+      '<button type="button" class="ch-btn active" data-ch="app"><span class="nm">אפליקציה</span></button>' +
+      '<button type="button" class="ch-btn" data-ch="whatsapp"><span class="nm">וואטסאפ</span></button>' +
+      '<button type="button" class="ch-btn" data-ch="phone"><span class="nm">טלפון</span></button>' +
+      '<button type="button" class="ch-btn" data-ch="inperson"><span class="nm">פנים מול פנים</span></button></div>' +
+      '<div class="tags-row" id="tagsRow"></div>' +
+      '<div class="input-wrap"><textarea class="text-input" id="aiSituation" rows="2" placeholder="תאר מה קרה..." maxlength="600"></textarea></div>' +
+      '<button type="button" class="btn-primary" id="aiSubmit">⚡ קבל 4 ארכיטיפים</button>' +
+      '<div class="err-banner" id="aiErr"></div><div class="skeleton-stack hidden" id="aiLoad"></div>' +
+      '<div class="persona-grid hidden" id="aiResults"></div>' +
+      '<div style="margin-top:20px"><div class="sit-cards" id="sitCards"></div></div>';
+
+    var tagsRow = root.querySelector('#tagsRow');
+    var sitCards = root.querySelector('#sitCards');
+    var aiSituation = root.querySelector('#aiSituation');
+    var aiSubmit = root.querySelector('#aiSubmit');
+    var aiErr = root.querySelector('#aiErr');
+    var aiLoad = root.querySelector('#aiLoad');
+    var aiResults = root.querySelector('#aiResults');
+
+    tagsRow.innerHTML = QUICK_TAGS.map(function (t) {
+      return '<button type="button" class="tag-chip" data-q="' + t + '">' + t + '</button>';
+    }).join('');
+
+    root.querySelectorAll('.ch-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        root.querySelectorAll('.ch-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        curCh = btn.dataset.ch;
+        renderSit('');
+      };
+    });
+    tagsRow.querySelectorAll('.tag-chip').forEach(function (c) {
+      c.onclick = function () { aiSituation.value = c.dataset.q; renderSit(c.dataset.q); };
+    });
+
+    function renderSit(q) {
+      var ql = (q || '').toLowerCase();
+      var list = SITUATIONS.filter(function (s) { return s.ch.indexOf(curCh) >= 0; });
+      if (ql) list = list.filter(function (s) {
+        return s.title.indexOf(ql) >= 0 || s.keywords.some(function (k) { return k.indexOf(ql) >= 0; });
+      });
+      sitCards.innerHTML = list.map(function (s) {
+        return '<div class="sit-card"><div class="sit-hdr"><span>' + s.icon + '</span><span class="sit-title">' + s.title + '</span><span>◀</span></div>' +
+          '<div class="hidden sit-body" style="padding:0 14px 14px">' +
+          ['alpha', 'beta', 'witty', 'friendly'].map(function (p) {
+            return '<div class="persona-card ' + p + ' show"><div class="persona-head"><span class="persona-tag">' + PERSONAS[p].label + '</span></div>' +
+              '<div class="persona-body">' + s.responses[p] + '</div></div>';
+          }).join('') + '</div></div>';
+      }).join('');
+      sitCards.querySelectorAll('.sit-hdr').forEach(function (hdr) {
+        hdr.onclick = function () {
+          var card = hdr.parentElement;
+          var body = card.querySelector('.sit-body');
+          var open = card.classList.toggle('open');
+          body.classList.toggle('hidden', !open);
+        };
+      });
+    }
+    renderSit('');
+
+    aiSubmit.onclick = async function () {
+      var situation = aiSituation.value.trim();
+      if (!situation || loading) return;
+      loading = true;
+      aiSubmit.disabled = true;
+      aiErr.classList.remove('show');
+      aiResults.classList.add('hidden');
+      aiLoad.classList.remove('hidden');
+      aiLoad.innerHTML = '<div class="skeleton-card"><div class="sk-line l"></div></div>'.repeat(4);
+      try {
+        var data = await postJson('/api/analyze', { situation: situation, channel: curCh });
+        aiLoad.classList.add('hidden');
+        aiResults.classList.remove('hidden');
+        aiResults.innerHTML = '';
+        ['alpha', 'beta', 'witty', 'friendly'].forEach(function (key, i) {
+          var p = PERSONAS[key];
+          var txt = data.responses[key] || '—';
+          var card = document.createElement('div');
+          card.className = 'persona-card ' + key + ' show';
+          card.innerHTML = '<div class="persona-head"><span class="persona-tag">' + p.label + '</span><span style="font-size:9px;color:var(--text-muted)">' + p.sub + '</span></div>' +
+            '<div class="persona-body">' + txt + '</div><div class="persona-foot"><button type="button" class="copy-btn">העתק</button></div>';
+          card.querySelector('.copy-btn').onclick = function () {
+            navigator.clipboard.writeText(txt);
+            this.textContent = 'הועתק ✓';
+          };
+          aiResults.appendChild(card);
+        });
+      } catch (e) {
+        aiLoad.classList.add('hidden');
+        aiErr.textContent = '⚠️ ' + (e.message || e);
+        aiErr.classList.add('show');
+      }
+      loading = false;
+      aiSubmit.disabled = false;
+    };
+    aiSituation.onkeydown = function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiSubmit.click(); }
+    };
+  }
+
+  /* ── Alpha Sim ── */
+  function initSim(root) {
+    var locked = false, history = [], pendingBubble = null;
+    root.innerHTML =
+      '<div class="section-eyebrow">Alpha Training</div><h2 class="section-title">סימולטור אלפא</h2>' +
+      '<p class="section-desc">בטא = BUG. תקן ושלח שוב.</p>' +
+      '<div class="card card-pad sim-arena"><div class="sim-chat-wrap">' +
+      '<div class="glitch-overlay" id="glitchOverlay"><div class="glitch-title">BUG DETECTED</div>' +
+      '<div class="glitch-sub" id="glitchError"></div><div class="glitch-hint" id="glitchHint"></div></div>' +
+      '<div class="sim-chat" id="simChat"></div></div>' +
+      '<div class="sim-input-row"><input type="text" class="text-input" id="simInput" placeholder="קצר, רגוע, אלפא..." maxlength="400" />' +
+      '<button type="button" class="btn-primary sim-send" id="simSend">➤</button></div></div>';
+
+    var chat = root.querySelector('#simChat');
+    var input = root.querySelector('#simInput');
+    var sendBtn = root.querySelector('#simSend');
+    var overlay = root.querySelector('#glitchOverlay');
+    var glitchError = root.querySelector('#glitchError');
+    var glitchHint = root.querySelector('#glitchHint');
+
+    function bubble(t, who) {
+      var b = document.createElement('div');
+      b.className = 'sim-bubble ' + who;
+      b.textContent = t;
+      chat.appendChild(b);
+      chat.scrollTop = chat.scrollHeight;
+    }
+    bubble('היי 😊 איך היה היום?', 'her');
+
+    async function evalMsg(msg) {
+      try {
+        return await postJson('/api/alpha-sim', { message: msg, context: history.join(' | ') });
+      } catch (e) {
+        return { isBeta: /סורי|מצטער|אם זה בסדר|הכל בסדר|ממש מקווה/i.test(msg), errorHe: 'תגובה נויה מדי.', reframeHint: 'קצר. בלי להתנצל.' };
+      }
+    }
+
+    sendBtn.onclick = async function () {
+      var msg = input.value.trim();
+      if (!msg) return;
+      sendBtn.disabled = true;
+      var ev = await evalMsg(msg);
+      sendBtn.disabled = false;
+      if (ev.isBeta) {
+        if (!locked) {
+          pendingBubble = document.createElement('div');
+          pendingBubble.className = 'sim-bubble you';
+          pendingBubble.textContent = msg;
+          chat.appendChild(pendingBubble);
+        } else if (pendingBubble) pendingBubble.textContent = msg;
+        locked = true;
+        overlay.classList.add('active');
+        glitchError.textContent = ev.errorHe || 'VALUE DROP';
+        glitchHint.textContent = '↳ ' + (ev.reframeHint || 'נסח מחדש') + ' — שלח שוב';
+        input.value = '';
+        return;
+      }
+      locked = false;
+      overlay.classList.remove('active');
+      if (!pendingBubble) bubble(msg, 'you');
+      else { pendingBubble.textContent = msg; pendingBubble = null; }
+      history.push('u:' + msg);
+      input.value = '';
+      setTimeout(function () {
+        var r = ['מעניין...', 'חחח אוקיי', 'ספר עוד', 'אוהבת את הביטחון'][Math.floor(Math.random() * 4)];
+        bubble(r, 'her');
+      }, 500);
+    };
+    input.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); sendBtn.click(); } };
+  }
+
+  /* ── VIP Guides ── */
+  function initVip(root) {
+    root.innerHTML = '<div class="section-eyebrow">VIP</div><h2 class="section-title">מדריכי פרימיום</h2><div class="guide-list" id="guideList"></div>';
+    var list = root.querySelector('#guideList');
+    list.innerHTML = GUIDES.map(function (g) {
+      return '<article class="guide-item"><button type="button" class="guide-trigger"><div class="guide-icon-wrap">📖</div>' +
+        '<div class="guide-meta"><div class="guide-title">' + g.title + '</div><div class="guide-sub">' + g.sub + '</div></div><span class="guide-chev">▼</span></button>' +
+        '<div class="guide-panel"><div class="guide-content">' + g.body + '</div></div></article>';
+    }).join('');
+    list.querySelectorAll('.guide-trigger').forEach(function (btn) {
+      btn.onclick = function () {
+        var item = btn.parentElement;
+        var was = item.classList.contains('open');
+        list.querySelectorAll('.guide-item').forEach(function (el) { el.classList.remove('open'); });
+        if (!was) item.classList.add('open');
+      };
+    });
+  }
+
+  function init() {
+    try {
+      document.querySelectorAll('.nav-btn').forEach(function (btn) {
+        btn.onclick = function () { switchView(btn.dataset.view); };
+      });
+      initAnalyze($('mount-analyze'));
+      initTruth($('mount-truth'));
+      initSim($('mount-sim'));
+      initVip($('mount-vip'));
+      switchView('truth');
+      var err = $('boot-error');
+      if (err) err.classList.add('hidden');
+    } catch (e) {
+      console.error(e);
+      var el = $('boot-error');
+      if (el) {
+        el.textContent = 'שגיאה: ' + (e.message || e);
+        el.classList.remove('hidden');
+      }
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+
+================================================================================
+FILE: public\css\styles.css
+================================================================================
+:root {
+  --obsidian: #0b0b0f;
+  --carbon: #16161e;
+  --carbon-hover: #1e1e28;
+  --crimson: #ff2a54;
+  --crimson-dim: rgba(255, 42, 84, 0.15);
+  --crimson-glow: rgba(255, 42, 84, 0.45);
+  --gold: #ffb800;
+  --gold-dim: rgba(255, 184, 0, 0.12);
+  --gold-glow: rgba(255, 184, 0, 0.35);
+  --text: #f4f4f8;
+  --text-muted: #8a8a9a;
+  --border: #252530;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-h: 72px;
+  --header-h: 56px;
+}
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Noto Sans Hebrew', system-ui, sans-serif;
+  background: var(--obsidian);
+  color: var(--text-muted);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 42, 84, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(255, 184, 0, 0.04), transparent);
+}
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+/* ── Shell ── */
+.app-shell {
+  position: relative;
+  z-index: 2;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 16px);
+}
+
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: rgba(11, 11, 15, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-mini {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.12em;
+  color: var(--text);
+  line-height: 1;
+}
+
+.brand-mini span {
+  color: var(--gold);
+}
+
+.vip-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: var(--gold-dim);
+  border: 1px solid rgba(255, 184, 0, 0.35);
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+
+.view {
+  display: none;
+  padding: 16px 18px 24px;
+  animation: viewIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.view.active {
+  display: block;
+}
+
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.section-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(28px, 8vw, 36px);
+  color: var(--text);
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.section-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--carbon);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  border-color: rgba(255, 42, 84, 0.25);
+}
+
+.card-pad {
+  padding: 16px;
+}
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 8px 12px calc(8px + var(--safe-bottom));
+  background: rgba(11, 11, 15, 0.92);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-btn .nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.nav-btn.active {
+  color: var(--crimson);
+  background: var(--crimson-dim);
+}
+
+.nav-btn.vip-tab.active {
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, var(--crimson), #cc1a3f);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px var(--crimson-glow);
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px var(--crimson-glow);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold), #cc9200);
+  color: #0b0b0f;
+  box-shadow: 0 8px 24px var(--gold-glow);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--crimson);
+  color: var(--text);
+}
+
+/* ── Channel grid ── */
+.ch-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ch-btn {
+  background: var(--carbon);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.ch-btn .nm {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ch-btn .ds {
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.ch-btn.active {
+  border-color: var(--crimson);
+  background: var(--crimson-dim);
+  box-shadow: 0 0 20px var(--crimson-dim);
+}
+
+.ch-btn.active .nm {
+  color: var(--crimson);
+}
+
+/* ── Inputs ── */
+.input-wrap {
+  position: relative;
+  background: #08080c;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.input-wrap:focus-within {
+  border-color: rgba(255, 42, 84, 0.5);
+}
+
+.text-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 14px 16px;
+  direction: rtl;
+  resize: none;
+  min-height: 52px;
+  max-height: 140px;
+  line-height: 1.5;
+}
+
+.text-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* ── Persona cards (analyze) ── */
+.persona-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.persona-card {
+  background: var(--carbon);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.persona-card.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.persona-card.alpha { border-color: rgba(255, 42, 84, 0.35); }
+.persona-card.beta { border-color: rgba(120, 140, 200, 0.3); }
+.persona-card.witty { border-color: rgba(255, 184, 0, 0.35); }
+.persona-card.friendly { border-color: rgba(80, 200, 140, 0.3); }
+
+.persona-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.persona-tag {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.persona-card.alpha .persona-tag {
+  color: var(--crimson);
+  background: var(--crimson-dim);
+  border: 1px solid rgba(255, 42, 84, 0.3);
+}
+
+.persona-card.beta .persona-tag {
+  color: #8899dd;
+  background: rgba(74, 111, 165, 0.12);
+}
+
+.persona-card.witty .persona-tag {
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+
+.persona-card.friendly .persona-tag {
+  color: #50d090;
+  background: rgba(46, 139, 87, 0.1);
+}
+
+.persona-body {
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.persona-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 14px 12px;
+}
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 10px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.copy-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.copy-btn.copied {
+  border-color: #2ecc71;
+  color: #2ecc71;
+}
+
+/* ── Truth or Dare 3D ── */
+.tod-arena {
+  position: relative;
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0 12px;
+}
+
+.tod-scene {
+  width: 200px;
+  height: 220px;
+  perspective: 900px;
+  perspective-origin: 50% 40%;
+  margin-bottom: 20px;
+}
+
+.tod-spinner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: none;
+}
+
+.tod-spinner.spinning {
+  transition: none;
+}
+
+.bottle-group {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 140px;
+  margin-left: -24px;
+  margin-top: -70px;
+  transform-style: preserve-3d;
+}
+
+.bottle-body {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.bottle-glass {
+  position: absolute;
+  width: 44px;
+  height: 110px;
+  left: 2px;
+  top: 28px;
+  background: linear-gradient(90deg, rgba(255,42,84,0.15), rgba(255,255,255,0.08), rgba(255,42,84,0.1));
+  border: 2px solid rgba(255, 42, 84, 0.5);
+  border-radius: 8px 8px 16px 16px;
+  box-shadow: inset 0 -20px 30px rgba(0,0,0,0.4), 0 0 24px var(--crimson-dim);
+}
+
+.bottle-neck {
+  position: absolute;
+  width: 18px;
+  height: 32px;
+  left: 15px;
+  top: 0;
+  background: linear-gradient(90deg, #2a2a35, #3d3d4a, #2a2a35);
+  border: 1px solid rgba(255, 42, 84, 0.4);
+  border-radius: 4px 4px 0 0;
+}
+
+.bottle-cork {
+  position: absolute;
+  width: 14px;
+  height: 10px;
+  left: 17px;
+  top: -8px;
+  background: var(--gold);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+/* Truth / Dare labels on ring */
+.tod-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 180px;
+  height: 180px;
+  margin: -90px 0 0 -90px;
+  transform-style: preserve-3d;
+  transform: rotateX(72deg);
+}
+
+.tod-label {
+  position: absolute;
+  width: 72px;
+  height: 36px;
+  left: 50%;
+  top: 50%;
+  margin: -18px 0 0 -36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border-radius: 8px;
+  backface-visibility: hidden;
+}
+
+.tod-label.truth {
+  background: var(--crimson-dim);
+  border: 1px solid var(--crimson);
+  color: var(--crimson);
+  transform: rotateY(0deg) translateZ(90px);
+}
+
+.tod-label.dare {
+  background: var(--gold-dim);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  transform: rotateY(180deg) translateZ(90px);
+}
+
+.tod-floor {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 160px;
+  height: 40px;
+  margin-left: -80px;
+  background: radial-gradient(ellipse, rgba(255, 42, 84, 0.2), transparent 70%);
+  transform: rotateX(90deg) translateZ(-20px);
+  opacity: 0.6;
+}
+
+.tod-result {
+  width: 100%;
+  min-height: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s, margin 0.35s;
+}
+
+.tod-result.reveal {
+  max-height: 280px;
+  opacity: 1;
+  margin-top: 8px;
+}
+
+.tod-result-card {
+  background: linear-gradient(145deg, var(--carbon), #12121a);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.tod-result-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255, 42, 84, 0.06));
+  pointer-events: none;
+}
+
+.tod-result-card.dare-type::before {
+  background: linear-gradient(135deg, transparent, rgba(255, 184, 0, 0.08));
+}
+
+.tod-result-type {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.tod-result-card.truth-type .tod-result-type { color: var(--crimson); }
+.tod-result-card.dare-type .tod-result-type { color: var(--gold); }
+
+.tod-result-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.55;
+  position: relative;
+  z-index: 1;
+}
+
+.tod-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mode-chip {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--carbon);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-chip.active.truth-mode {
+  border-color: var(--crimson);
+  color: var(--crimson);
+  background: var(--crimson-dim);
+}
+
+.mode-chip.active.dare-mode {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+
+/* ── Alpha Sim glitch ── */
+.sim-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  padding: 4px 0;
+}
+
+.sim-bubble {
+  max-width: 88%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sim-bubble.her {
+  align-self: flex-start;
+  background: #1a1a24;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-right-radius: 4px;
+}
+
+.sim-bubble.you {
+  align-self: flex-end;
+  background: var(--crimson-dim);
+  border: 1px solid rgba(255, 42, 84, 0.35);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.sim-arena {
+  position: relative;
+}
+
+.sim-chat-wrap {
+  position: relative;
+  min-height: 200px;
+}
+
+.glitch-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  background: rgba(11, 11, 15, 0.92);
+  border: 2px solid var(--crimson);
+  border-radius: 12px;
+  animation: glitchFlash 0.12s steps(2) 6;
+}
+
+.glitch-overlay.active {
+  display: flex;
+}
+
+@keyframes glitchFlash {
+  0%, 100% { transform: translate(0); filter: hue-rotate(0deg); }
+  25% { transform: translate(-3px, 2px); filter: hue-rotate(90deg); }
+  50% { transform: translate(3px, -2px); }
+  75% { transform: translate(-2px, -3px); filter: hue-rotate(-90deg); }
+}
+
+.glitch-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--crimson);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 20px var(--crimson-glow);
+  margin-bottom: 8px;
+}
+
+.glitch-sub {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.glitch-hint {
+  font-size: 11px;
+  color: var(--gold);
+  font-style: italic;
+}
+
+.sim-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.sim-input-row .text-input {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.sim-send {
+  width: 48px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 10px;
+}
+
+/* ── VIP Guides accordion ── */
+.guide-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-item {
+  background: var(--carbon);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.guide-item.open {
+  border-color: rgba(255, 184, 0, 0.4);
+  box-shadow: 0 0 24px var(--gold-dim);
+}
+
+.guide-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: right;
+  font-family: inherit;
+}
+
+.guide-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--gold-dim);
+  color: var(--gold);
+}
+
+.guide-meta {
+  flex: 1;
+}
+
+.guide-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.guide-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.guide-chev {
+  color: var(--text-muted);
+  transition: transform 0.3s;
+}
+
+.guide-item.open .guide-chev {
+  transform: rotate(180deg);
+  color: var(--gold);
+}
+
+.guide-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.guide-item.open .guide-panel {
+  max-height: 1200px;
+}
+
+.guide-content {
+  padding: 0 16px 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+
+.guide-content h4 {
+  color: var(--gold);
+  font-size: 12px;
+  margin: 14px 0 6px;
+  letter-spacing: 0.05em;
+}
+
+.guide-content ul {
+  padding-right: 18px;
+  margin-bottom: 10px;
+}
+
+.guide-content li {
+  margin-bottom: 6px;
+}
+
+/* ── Loading / errors ── */
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-card {
+  background: var(--carbon);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 42, 84, 0.05), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.sk-line {
+  height: 10px;
+  background: var(--border);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.sk-line.s { width: 35%; }
+.sk-line.m { width: 65%; }
+.sk-line.l { width: 90%; }
+
+.err-banner {
+  display: none;
+  background: var(--crimson-dim);
+  border: 1px solid rgba(255, 42, 84, 0.4);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #ff6b85;
+  margin-bottom: 12px;
+}
+
+.err-banner.show {
+  display: block;
+}
+
+/* ── Situation cards (offline) ── */
+.sit-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sit-card {
+  background: var(--carbon);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sit-card.open {
+  border-color: rgba(255, 42, 84, 0.3);
+}
+
+.sit-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.sit-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tag-chip {
+  padding: 6px 12px;
+  font-size: 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.tag-chip:hover {
+  border-color: var(--crimson);
+  color: var(--crimson);
+}
+
+.hidden { display: none !important; }
+
+.boot-error {
+  position: fixed;
+  top: 60px;
+  left: 12px;
+  right: 12px;
+  z-index: 9999;
+  max-width: 456px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  background: rgba(255, 42, 84, 0.15);
+  border: 1px solid var(--crimson);
+  border-radius: 10px;
+  color: #ff6b85;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+
+================================================================================
+FILE: server.js
+================================================================================
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
+const apiRoutes = require('./server/routes/api');
+
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: '32kb' }));
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      }
+      if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      }
+    }
+  })
+);
+
+app.use('/api', apiRoutes);
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🐺 The Dark Script VIP server running on port ${PORT}`);
+});
+
+
+================================================================================
+FILE: server\prompts\archetypes.js
+================================================================================
+const CHANNEL_CTX = {
+  app: 'Dating app (Tinder/Bumble) — early stage, text only. Short, low-investment.',
+  whatsapp: 'WhatsApp — numbers exchanged. Warmer but never over-investing.',
+  phone: 'Phone call — must sound SPOKEN aloud. Short casual Hebrew. NOT text-clever.',
+  inperson: 'In person — date or meeting. What to SAY or DO. Very short, grounded.'
+};
+
+const CHANNEL_NAMES = {
+  app: 'אפליקציית היכרויות',
+  whatsapp: 'וואטסאפ',
+  phone: 'שיחת טלפון',
+  inperson: 'פנים מול פנים'
+};
+
+const ARCHETYPE_RULES = `
+STRICT ARCHETYPE DEFINITIONS — NEVER blend, soften, or hallucinate personas:
+
+ALPHA (alpha):
+- Grounded, calm, SHORT (1-2 sentences max)
+- 100% emotional control — zero justification, zero explaining yourself
+- Absolute confidence — sounds like a secure man, NOT a pickup artist
+- Natural spoken Hebrew
+- ZERO emojis, ZERO exclamation marks stacking, ZERO "אני מבין/מכבד/סורי"
+- Low investment — you are not chasing her approval
+- If she said no or seems unwilling: graceful acceptance, walk away energy — NOT pushing
+
+BETA (beta):
+- Soft, over-invested, people-pleasing
+- Apologizing or preemptively justifying ("סורי", "אם זה בסדר", "לא רציתי")
+- Overly polite, eager to please, seeks validation
+- May use emojis — shows neediness
+
+WITTY (witty):
+- Cocky AND funny — playful teasing, not mean
+- Roleplay or frame-shift acceptable
+- High tension through humor and unpredictability
+- Clever Hebrew, can be slightly absurd
+
+FRIENDLY (friendly):
+- Warm but grounded — active listening energy
+- Rapport-building, empathy without supplication
+- Honest and direct, no-pressure — NOT beta-polite
+
+FORBIDDEN FOR ALL: English mixed in, markdown, meta-commentary, labels like "אלפא:" in the text.
+Return ONLY raw Hebrew reply strings inside JSON keys.`;
+
+function buildAnalyzePrompt(situation, channel) {
+  const ch = CHANNEL_CTX[channel] || CHANNEL_CTX.app;
+  const chName = CHANNEL_NAMES[channel] || CHANNEL_NAMES.app;
+  const spoken = channel === 'phone' || channel === 'inperson';
+
+  return `You are "The Dark Script" — elite dating communication coach for Israel.
+
+CHANNEL: ${ch}
+CHANNEL (Hebrew): ${chName}
+USER SITUATION (Hebrew): "${situation.trim()}"
+
+${ARCHETYPE_RULES}
+
+LENGTH: ${spoken ? 'VERY SHORT — spoken sentences only' : 'Concise text messages'}
+All 4 values MUST be Hebrew only.
+
+Return ONLY valid JSON (no markdown, no backticks, no preamble):
+{"alpha":"...","beta":"...","witty":"...","friendly":"..."}`;
+}
+
+function buildAlphaSimPrompt(userMessage, conversationContext) {
+  return `You are the "Alpha Training" evaluator for a dating simulator.
+
+The user is chatting with an AI female avatar in Hebrew. Classify ONLY the user's latest message.
+
+BETA/NEEDY signals (any = beta): apologizing without cause, double-texting energy, "סורי/מצטער", asking permission excessively, compliment fishing, explaining himself, "אני מבין אותך", "אם זה בסדר", emoji overload, seeking validation, over-explaining, needy questions ("למה לא ענית", "הכל בסדר?").
+
+ALPHA signals: calm, short, no justification, playful or grounded, maintains frame.
+
+USER MESSAGE: "${userMessage.trim()}"
+CONTEXT: ${conversationContext || 'opening'}
+
+Return ONLY JSON:
+{
+  "isBeta": true|false,
+  "severity": "low"|"medium"|"high",
+  "errorHe": "2-3 sentences in Hebrew explaining the psychological mistake — sharp, Bat Yam direct coach tone",
+  "reframeHint": "One sentence hint how to reframe as Alpha — Hebrew"
+}`;
+}
+
+module.exports = {
+  CHANNEL_CTX,
+  CHANNEL_NAMES,
+  buildAnalyzePrompt,
+  buildAlphaSimPrompt
+};
+
+
+================================================================================
+FILE: server\routes\api.js
+================================================================================
+const express = require('express');
+const { buildAnalyzePrompt, buildAlphaSimPrompt } = require('../prompts/archetypes');
+
+const router = express.Router();
+
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
+async function groqChat(prompt, maxTokens = 500) {
+  const response = await fetch(GROQ_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GROQ_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.65,
+      max_tokens: maxTokens
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `Groq API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content.replace(/```json|```/g, '').trim();
+}
+
+function parseJsonSafe(raw) {
+  return JSON.parse(raw);
+}
+
+function handleGroqError(err, res) {
+  console.error('Groq error:', err.message);
+  if (err.message.includes('API') && err.message.includes('key')) {
+    return res.status(401).json({ error: 'API Key לא תקין. בדוק את קובץ .env' });
+  }
+  if (err.message.includes('quota') || err.message.includes('rate_limit')) {
+    return res.status(429).json({ error: 'חרגת מהמכסה. נסה שוב בעוד דקה.' });
+  }
+  if (err instanceof SyntaxError) {
+    return res.status(500).json({ error: 'שגיאה בפענוח תשובת ה-AI. נסה שוב.' });
+  }
+  return res.status(500).json({ error: 'שגיאה פנימית: ' + err.message });
+}
+
+router.post('/analyze', async (req, res) => {
+  const { situation, channel } = req.body;
+
+  if (!situation || !String(situation).trim()) {
+    return res.status(400).json({ error: 'חסרה סיטואציה' });
+  }
+
+  const validChannels = ['app', 'whatsapp', 'phone', 'inperson'];
+  const ch = validChannels.includes(channel) ? channel : 'app';
+
+  try {
+    const prompt = buildAnalyzePrompt(situation, ch);
+    const clean = await groqChat(prompt, 550);
+    const parsed = parseJsonSafe(clean);
+
+    if (!parsed.alpha || !parsed.beta || !parsed.witty || !parsed.friendly) {
+      throw new Error('תשובה לא שלמה מה-AI');
+    }
+
+    res.json({ success: true, responses: parsed, channel: ch });
+  } catch (err) {
+    return handleGroqError(err, res);
+  }
+});
+
+router.post('/alpha-sim', async (req, res) => {
+  const { message, context } = req.body;
+
+  if (!message || !String(message).trim()) {
+    return res.status(400).json({ error: 'חסרה הודעה' });
+  }
+  if (message.length > 800) {
+    return res.status(400).json({ error: 'הודעה ארוכה מדי' });
+  }
+
+  try {
+    const prompt = buildAlphaSimPrompt(message, context);
+    const clean = await groqChat(prompt, 320);
+    const parsed = parseJsonSafe(clean);
+
+    res.json({
+      success: true,
+      isBeta: Boolean(parsed.isBeta),
+      severity: parsed.severity || 'medium',
+      errorHe: parsed.errorHe || 'תגובה נויה מדי. קצר, רגוע, בלי להסביר.',
+      reframeHint: parsed.reframeHint || 'הגיב כאילו אין לך מה להוכיח.'
+    });
+  } catch (err) {
+    return handleGroqError(err, res);
+  }
+});
+
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'The Dark Script VIP API is running' });
+});
+
+module.exports = router;
+
+
+================================================================================
+FILE: public\js\data\situations.js
+================================================================================
+export const SITUATIONS_DATA = [
+  {
+    id: 'app_hahaha',
+    ch: ['app'],
+    icon: '💬',
+    cat: 'אפליקציית היכרויות',
+    title: 'שלחתי הי — חזר רק חחח',
+    keywords: ['חחח', 'hahaha', 'lol'],
+    responses: {
+      alpha: { text: 'חחח זה לא תשובה. מה קורה אצלך?' },
+      beta: { text: 'חחח אהבתי 😄 מה שלומך?' },
+      witty: { text: 'נגמרו המילים? אני יכול לשאיל.' },
+      friendly: { text: 'חחח אוקיי. מה קורה אצלך היום?' }
+    }
+  },
+  {
+    id: 'wa_ghosting',
+    ch: ['whatsapp', 'app'],
+    icon: '👻',
+    cat: 'וואטסאפ',
+    title: 'גוסטינג — נעלמה בלי סיבה',
+    keywords: ['גוסטינג', 'ghosting', 'נעלמה'],
+    responses: {
+      alpha: { text: 'נכון, דברנו. אם תרצי להמשיך — את יודעת איפה אני.' },
+      beta: { text: 'היי, הכל בסדר? לא שמעתי ממך כמה ימים.' },
+      witty: { text: 'בדקתי — ה-Wi-Fi שלי עובד. אז כנראה זה לא הכיוון.' },
+      friendly: { text: 'היי, נראה שפיספסנו. בלי לחץ — אם תרצי לדבר, אני פה.' }
+    }
+  },
+  {
+    id: 'app_tooearly_meet',
+    ch: ['app', 'whatsapp'],
+    icon: '⏰',
+    cat: 'דייטים',
+    title: 'אמרה שמוקדם מדי לפגוש',
+    keywords: ['מוקדם', 'לפגוש'],
+    responses: {
+      alpha: { text: 'בסדר גמור. אני לא ממהר לשום מקום.' },
+      beta: { text: 'כמובן, אני מבין אותך לגמרי. ניכר בקצב שנוח לך.' },
+      witty: { text: 'טוב שאמרת — כי גם אני עוד לא החלטתי אם אני רוצה.' },
+      friendly: { text: 'לגמרי מכבד את זה. נכיר קצת יותר קודם.' }
+    }
+  },
+  {
+    id: 'phone_boyfriend',
+    ch: ['phone', 'app', 'whatsapp'],
+    icon: '💔',
+    cat: 'שיחת טלפון',
+    title: 'אמרה שיש לה חבר',
+    keywords: ['חבר', 'boyfriend'],
+    responses: {
+      alpha: { text: 'שאלתי אם תרצי לשתות קפה, לא אם את פנויה.' },
+      beta: { text: 'ממש מכבד את זה. תמיד כיף לדבר.' },
+      witty: { text: 'הוא מוזמן. אני אשלם על שלושה שוורמות.' },
+      friendly: { text: 'מעריך שאמרת. נדבר כחברים?' }
+    }
+  },
+  {
+    id: 'ip_end_date',
+    ch: ['inperson'],
+    icon: '🌙',
+    cat: 'פנים מול פנים',
+    title: 'סיום דייט מוצלח',
+    keywords: ['סיום', 'לפני שהולכת'],
+    responses: {
+      alpha: { text: 'היה כיף. נדבר.' },
+      beta: { text: 'היה ממש נחמד! אשמח לעשות את זה שוב 😊' },
+      witty: { text: 'אוקיי, הצלחת לגרום לי לרצות דייט שני.' },
+      friendly: { text: 'נהניתי מאוד. נדבר מחר?' }
+    }
+  }
+];
+
+export const QUICK_TAGS = ['חחח', 'גוסטינג', 'יש לה חבר', 'מוקדם מדי', 'דייט', 'ריד סיין'];
+
+export const PERSONA_INFO = {
+  alpha: { label: 'אלפא', sub: 'רגוע · קצר · בלי הסברים' },
+  beta: { label: 'בטא', sub: 'רך · מתנצל · מרצה' },
+  witty: { label: 'שנון', sub: 'עוקץ · משחק מסגרת' },
+  friendly: { label: 'חברי', sub: 'חם · ישיר · בלי לחץ' }
+};
+
+
+================================================================================
+FILE: public\js\data\truth-dare-prompts.js
+================================================================================
+export const TRUTH_PROMPTS = [
+  'ספרי על הפעם האחרונה שחשבת על מישהו אחרת בזמן דייט — בלי לייפות.',
+  'מה הדבר הכי פחדני שאת מסתירה מאנשים שמושכים אותך?',
+  'אם היינו לבד עכשיו — מה היית עושה קודם: מדברת או נוגעת?',
+  'דרגי את עצמך 1-10 — כמה את באמת פתוחה לסכנה רגשית הערב?',
+  'מה המשפט שגבר אמר לך ועדיין חוזר לך בראש?',
+  'איזה חלק בגוף שלך את הכי גאה בו — ואיזה את מסתירה?',
+  'מתי בפעם האחרונה הרגשת מתאהבת מהר מדי — ומה עשית עם זה?',
+  'מה הייתה הפנטזיה הכי מופרעת שלך השנה — רק כותרת, בלי פרטים מיותרים.'
+];
+
+export const DARE_PROMPTS = [
+  'שמרי קשר עין 10 שניות — בלי לצחוק, בלי להסביר למה.',
+  'לחשי באוזן משהו שאמרת רק לעצמך — לא לי, לעצמך.',
+  'תני לי שאלה שאת מפחדת לשאול אותי — עכשיו.',
+  'שלחי לי עכשיו אימוג׳י אחד שמתאר איך את מרגישה כרגע — בלי מילים.',
+  'תארי איך היית רוצה שיגעו בך — במשפט אחד, ישיר.',
+  'הימנעי מ"כן/לא" ל-30 שניות — ענה רק במשפטים.',
+  'תני לי ניחוש אחד על מה שאני חושב עלייך — אם טעית, את שואלת.',
+  'הציעי פעילות ל-20 דקות שתעלה את המתח — בלי "נלך לקפה".'
+];
+
+
+================================================================================
+FILE: public\js\modules\vip-guides.js
+================================================================================
+const GUIDES = [
+  {
+    id: 'beginner',
+    icon: 'compass',
+    title: 'מדריך לבתול',
+    sub: 'ביטחון, חרדה חברתית, ערך עצמי',
+    sections: [
+      {
+        h: 'שבירת חרדה — לא "טכניקות"',
+        items: [
+          'המטרה היא לא להיות מושלם — אלא להיות נוכח. 30 שניות של קשר עין + חיוך קל עושים יותר מ-100 שורות בצ\'אט.',
+          'תרגל "שאלה אחת + שתיקה". אל תמלא שתיקות — ביטחון נשמע בשקט.',
+          'הפסק לחשוב "מה היא חושבת עלי" — זה מוריד אותך מכסא האלפא.'
+        ]
+      },
+      {
+        h: 'מפסיקים לשים אותה על פדסטל',
+        items: [
+          'היא בן אדם עם חרדות משלה — לא פרס.',
+          'משיכה = עניין + גבולות. לא התנצלות על קיום.',
+          'אם אתה מרגיש צורך "להוכיח" — עצור. חזור לשאלה: מה אני רוצה מהערב הזה?'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'marriage',
+    icon: 'flame',
+    title: 'להחזיר את הסקס לחיי הנישואין',
+    sub: 'פרסים לסירוגין, קוטביות, שבירת שגרה',
+    sections: [
+      {
+        h: 'מערכת תגמול לסירוגין (Intermittent Reward)',
+        items: [
+          'עקביות מוחלטת הורגת מתח — לא רק בילדים, גם בזוגיות.',
+          'תכנן "ערבים שלא צפויים" — לא תאריך קבוע, לא אותו מסעדה.',
+          'הפתעה ≠ כסף. שינוי אנרגיה, הומור, מסגרת חדשה.'
+        ]
+      },
+      {
+        h: 'קוטביות מינית בטווח ארוך',
+        items: [
+          'אם אתם שותפים בכל — אתם לא מאהבים. השאר מרחב לחידוש.',
+          'דברו על פנטזיה בלי לחץ לביצוע מיידי.',
+          'גוף + נוכחות > ביצועים. הפחת "ביצועים" מהשיחה.'
+        ]
+      }
+    ]
+  },
+  {
+    id: 'stamina',
+    icon: 'zap',
+    title: 'איך לא לגמור מהר',
+    sub: 'Edging, קגל הפוך, מסגור קוגניטיבי',
+    sections: [
+      {
+        h: 'טכניקות פיזיות',
+        items: [
+          'Edging: התקרב ל-7/10, עצור 20 שניות, חזור — 3-4 מחזורים לפני שחרור.',
+          'Reverse Kegels: נשיפה ארוכה + "לשחרר" את רצפת האגן — לא לדחוס.',
+          'נשימת 4-7-8: שאף 4, החזק 7, נשוף 8 — לפני ותוך כדי.'
+        ]
+      },
+      {
+        h: 'חרדת ביצועים — המסגור',
+        items: [
+          'המוח מחפש "הוכחה" — זה ממהיר גמר. המטרה: חוויה, לא ציון.',
+          'אם קורה מהר — אל תתנצל. הומור קל + מעבר לקשר עין.',
+          'שיחה עם השותפה על לחץ = מוריד 50% מהמתח.'
+        ]
+      }
+    ]
+  }
+];
+
+export function initVipGuides(container) {
+  container.innerHTML = `
+    <div class="section-eyebrow">VIP Masterclass</div>
+    <h2 class="section-title">מדריכי פרימיום</h2>
+    <p class="section-desc">תוכן עומק — פתח כרטיס, קרא, יישם. ללא רעש.</p>
+    <div class="guide-list" id="guideList"></div>`;
+
+  const list = container.querySelector('#guideList');
+
+  list.innerHTML = GUIDES.map(
+    (g) => `
+    <article class="guide-item" data-guide="${g.id}">
+      <button type="button" class="guide-trigger" aria-expanded="false">
+        <div class="guide-icon-wrap"><i data-lucide="${g.icon}"></i></div>
+        <div class="guide-meta">
+          <div class="guide-title">${g.title}</div>
+          <div class="guide-sub">${g.sub}</div>
+        </div>
+        <i data-lucide="chevron-down" class="guide-chev"></i>
+      </button>
+      <div class="guide-panel">
+        <div class="guide-content">
+          ${g.sections
+            .map(
+              (s) => `
+            <h4>${s.h}</h4>
+            <ul>${s.items.map((i) => `<li>${i}</li>`).join('')}</ul>`
+            )
+            .join('')}
+        </div>
+      </div>
+    </article>`
+  ).join('');
+
+  list.querySelectorAll('.guide-trigger').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.guide-item');
+      const wasOpen = item.classList.contains('open');
+      list.querySelectorAll('.guide-item').forEach((el) => {
+        el.classList.remove('open');
+        el.querySelector('.guide-trigger')?.setAttribute('aria-expanded', 'false');
+      });
+      if (!wasOpen) {
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+}
+
+
+================================================================================
+FILE: package.json
+================================================================================
+{
+  "name": "dark-script-api",
+  "version": "1.0.0",
+  "description": "The Dark Script - Dating AI Backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

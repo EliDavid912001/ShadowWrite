@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0B0F">
+  <title>The Dark Script · VIP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .nav-icon { font-size: 20px; line-height: 1; }
+    .vip-pill { font-size: 9px; }
+  </style>
+</head>
+<body>
+  <div id="boot-error" class="boot-error hidden" role="alert"></div>
+  <div class="noise-overlay" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <header class="top-bar">
+      <div class="brand-mini">DARK <span>SCRIPT</span></div>
+      <span class="vip-pill">👑 VIP</span>
+    </header>
+
+    <main>
+      <section id="view-analyze" class="view" aria-label="מנוע תשובות">
+        <div id="mount-analyze"></div>
+      </section>
+
+      <section id="view-truth" class="view active" aria-label="אמת או חובה">
+        <div class="section-eyebrow">Truth or Dare</div>
+        <h2 class="section-title">אמת או חובה</h2>
+        <p class="section-desc">סובב את הבקבוק — קבל מתח לדייט.</p>
+        <div id="mount-truth"></div>
+      </section>
+
+      <section id="view-sim" class="view" aria-label="סימולטור אלפא">
+        <div id="mount-sim"></div>
+      </section>
+
+      <section id="view-vip" class="view" aria-label="מדריכי VIP">
+        <div id="mount-vip"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="ניווט">
+      <button type="button" class="nav-btn" data-view="analyze">
+        <span class="nav-icon">💬</span>
+        <span>תשובות</span>
+      </button>
+      <button type="button" class="nav-btn active" data-view="truth">
+        <span class="nav-icon">🍾</span>
+        <span>אמת/חובה</span>
+      </button>
+      <button type="button" class="nav-btn" data-view="sim">
+        <span class="nav-icon">🐛</span>
+        <span>אלפא</span>
+      </button>
+      <button type="button" class="nav-btn vip-tab" data-view="vip">
+        <span class="nav-icon">📖</span>
+        <span>VIP</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="/app.bundle.js?v=4" defer></script>
+</body>
+</html>
