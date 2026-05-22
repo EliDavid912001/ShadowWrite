@@ -1,7 +1,8 @@
+import { initFourAnswers } from './modules/four-answers.js';
 import { initAnalyze } from './modules/analyze.js';
 import { TruthOrDareGame } from './modules/truth-or-dare.js';
-import { initAlphaSim } from './modules/alpha-sim.js';
 import { initVipGuides } from './modules/vip-guides.js';
+import { setAnalyzing } from './simulator-state.js';
 
 const VIEWS = ['analyze', 'truth', 'sim', 'vip'];
 
@@ -22,29 +23,34 @@ function switchView(id) {
 function initNav() {
   document.querySelectorAll('.nav-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const id = btn.dataset.view;
-      if (!VIEWS.includes(id)) return;
-      switchView(id);
+      const viewId = btn.dataset.view;
+      if (!VIEWS.includes(viewId)) return;
+      switchView(viewId);
     });
   });
 }
 
 function initModules() {
-  initAnalyze(document.getElementById('mount-analyze'));
+  initFourAnswers(document.getElementById('mount-analyze'));
   truthGame = new TruthOrDareGame(document.getElementById('mount-truth'));
-  initAlphaSim(document.getElementById('mount-sim'));
+  initAnalyze(document.getElementById('mount-sim'));
   initVipGuides(document.getElementById('mount-vip'));
 }
 
 export async function initApp() {
   if (!document.getElementById('mount-analyze')) {
-    throw new Error('DOM לא נטען');
+    throw new Error('DOM לא נטען — חסר #mount-analyze');
+  }
+
+  setAnalyzing(false);
+  if (typeof window !== 'undefined') {
+    window.isAnalyzing = false;
+    window.setAnalyzing = setAnalyzing;
   }
 
   initNav();
   initModules();
-  switchView('truth');
-  refreshIcons();
+  switchView('analyze');
 }
 
 export function refreshIcons() {
@@ -52,4 +58,3 @@ export function refreshIcons() {
     window.lucide.createIcons();
   }
 }
-

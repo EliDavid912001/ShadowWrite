@@ -3,19 +3,454 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0B0B0F">
+  <meta name="theme-color" content="#000000">
   <title>The Dark Script · VIP</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Heebo:wght@300;400;500;700&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css?v=128">
   <style>
+    /* ═══ Dark Script · Pro-Max Design System ═══
+       OLED + Liquid Glass + 3D Hyperrealism */
+
+    :root {
+      --oled: #000000;
+      --oled-soft: #050505;
+      --glass-bg: rgba(25, 25, 25, 0.4);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      --glass-blur: blur(16px) saturate(180%);
+      --crimson: #ff2a54;
+      --crimson-deep: #8b0018;
+      --gold: #eac07c;
+      --gold-neon: #ffb800;
+      --blue-neon: #1976d2;
+      --blue-deep: #0a2a5c;
+      --press-3d: 6px;
+      --text: #f0f0f5;
+      --text-muted: #9a9aaa;
+    }
+
+    html { background: var(--oled); }
+
+    body {
+      background: var(--oled) !important;
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+
+    /* Aurora atmospheric layer */
+    .aurora-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background: var(--oled);
+    }
+
+    .aurora-bg::before,
+    .aurora-bg::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.55;
+      animation: auroraDrift 18s ease-in-out infinite alternate;
+    }
+
+    .aurora-bg::before {
+      width: 70vmin;
+      height: 70vmin;
+      top: -15%;
+      right: -20%;
+      background: radial-gradient(circle, rgba(255, 42, 84, 0.35) 0%, transparent 70%);
+    }
+
+    .aurora-bg::after {
+      width: 60vmin;
+      height: 60vmin;
+      bottom: 10%;
+      left: -25%;
+      background: radial-gradient(circle, rgba(234, 192, 124, 0.22) 0%, transparent 70%);
+      animation-delay: -6s;
+    }
+
+    @keyframes auroraDrift {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(4%, 6%) scale(1.08); }
+    }
+
+    .noise-overlay {
+      opacity: 0.2 !important;
+      z-index: 1;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ── Liquid Glass panels ── */
+    .liquid-glass,
+    .card,
+    .tod-container,
+    .container,
+    .tod-result-box,
+    .result-box,
+    .sim-arena,
+    .top-bar,
+    .bottom-nav {
+      background: var(--glass-bg) !important;
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border) !important;
+      box-shadow:
+        var(--glass-inset),
+        0 16px 48px rgba(0, 0, 0, 0.55) !important;
+    }
+
+    .top-bar {
+      background: rgba(0, 0, 0, 0.55) !important;
+      border-bottom-color: var(--glass-border) !important;
+    }
+
+    .bottom-nav {
+      background: rgba(0, 0, 0, 0.72) !important;
+      border-top-color: var(--glass-border) !important;
+    }
+
+    /* ── Premium typography & glow ── */
+    .brand-mini,
+    .tod-brand {
+      font-family: 'Bebas Neue', 'Heebo', sans-serif !important;
+      text-shadow:
+        0 0 24px rgba(234, 192, 124, 0.45),
+        0 0 48px rgba(255, 184, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.8) !important;
+    }
+
+    .brand-mini span,
+    .tod-brand {
+      color: var(--gold) !important;
+    }
+
+    .section-title,
+    .section-eyebrow {
+      text-shadow: 0 0 20px rgba(234, 192, 124, 0.2);
+    }
+
+    .section-title {
+      color: var(--text) !important;
+    }
+
+    .section-eyebrow {
+      color: var(--gold-neon) !important;
+    }
+
+    .tod-subtitle,
+    .section-desc {
+      color: var(--text-muted) !important;
+    }
+
+    .tod-turn-name {
+      text-shadow:
+        0 0 28px rgba(234, 192, 124, 0.5),
+        0 0 12px rgba(255, 184, 0, 0.25) !important;
+    }
+
+    /* ── Glass inputs ── */
+    .text-input,
+    #player-input,
+    #player-name-input {
+      background: rgba(15, 15, 15, 0.65) !important;
+      border: 1px solid var(--glass-border) !important;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: var(--text) !important;
+      border-radius: 10px !important;
+      font-size: 16px !important;
+      box-shadow: var(--glass-inset) !important;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .text-input:focus,
+    #player-input:focus,
+    #player-name-input:focus {
+      outline: none;
+      border-color: rgba(234, 192, 124, 0.35) !important;
+      box-shadow:
+        var(--glass-inset),
+        0 0 0 2px rgba(234, 192, 124, 0.12) !important;
+    }
+
+    /* כפתורים — בלי צל כפול; זוהר ב-hover בלבד (מוגדר ב-styles.css) */
+
+    /* Result card — floating glass pop */
+    .tod-result-box.visible,
+    .result-box.visible {
+      animation: glassResultPop 0.6s cubic-bezier(0.34, 1.45, 0.64, 1) forwards !important;
+    }
+
+    @keyframes glassResultPop {
+      0% {
+        opacity: 0;
+        transform: scale(0.82) translateY(24px);
+        box-shadow: var(--glass-inset), 0 8px 20px rgba(0, 0, 0, 0.3);
+      }
+      60% {
+        transform: scale(1.03) translateY(-8px);
+        box-shadow:
+          var(--glass-inset),
+          0 32px 64px rgba(0, 0, 0, 0.65),
+          0 0 40px rgba(234, 192, 124, 0.08);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(-6px);
+        box-shadow:
+          var(--glass-inset),
+          0 24px 56px rgba(0, 0, 0, 0.6),
+          0 0 32px rgba(255, 42, 84, 0.06);
+      }
+    }
+
+    .tod-result-box.truth-result.visible {
+      box-shadow:
+        var(--glass-inset),
+        0 24px 56px rgba(0, 0, 0, 0.6),
+        0 0 28px rgba(25, 118, 210, 0.15) !important;
+    }
+
+    .tod-result-box.dare-result.visible {
+      box-shadow:
+        var(--glass-inset),
+        0 24px 56px rgba(0, 0, 0, 0.6),
+        0 0 28px rgba(211, 47, 47, 0.18) !important;
+    }
+
+    /* 4 Answers scenario tab */
+    #view-analyze {
+      padding: 16px 14px 24px;
+    }
+
+    #view-analyze .persona-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    #view-analyze .persona-grid:not(.hidden) {
+      display: grid;
+    }
+
+    /* Chat simulation — WhatsApp-style thread */
+    #view-sim {
+      padding: 0 !important;
+      max-width: none !important;
+    }
+
+    #view-sim #mount-sim,
+    #view-sim .chat-sim {
+      height: 100%;
+      min-height: calc(100dvh - 120px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    #view-sim .chat-sim-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      background: rgba(12, 12, 16, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+      flex-shrink: 0;
+    }
+
+    #view-sim .chat-sim-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff5c7a, var(--gold));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    #view-sim .chat-sim-meta { flex: 1; text-align: right; }
+    #view-sim .chat-sim-name { font-weight: 700; font-size: 14px; }
+    #view-sim .chat-sim-status { font-size: 11px; color: #4caf50; }
+
+    #view-sim .chat-end-btn {
+      font-size: 10px;
+      padding: 8px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(234, 192, 124, 0.35);
+      background: rgba(234, 192, 124, 0.08);
+      color: var(--gold);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #view-sim .chat-end-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #view-sim .chat-thread-wrap {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(255, 42, 84, 0.04), transparent 50%),
+        #0a0a0e;
+    }
+
+    #view-sim .chat-thread {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #view-sim .chat-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      max-width: 100%;
+    }
+
+    #view-sim .chat-row--you { justify-content: flex-end; }
+    #view-sim .chat-row--her { justify-content: flex-start; }
+
+    #view-sim .chat-bubble {
+      max-width: 82%;
+      padding: 10px 14px;
+      font-size: 14px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    #view-sim .chat-bubble--you {
+      background: linear-gradient(135deg, #c2185b, var(--crimson));
+      color: #fff;
+      border-radius: 18px 18px 4px 18px;
+      box-shadow: 0 4px 16px rgba(255, 42, 84, 0.25);
+    }
+
+    #view-sim .chat-bubble--her {
+      background: rgba(28, 28, 36, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      border-radius: 18px 18px 18px 4px;
+      box-shadow: var(--glass-inset), 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    #view-sim .chat-mood { font-size: 14px; flex-shrink: 0; }
+
+    #view-sim .chat-typing {
+      padding: 6px 16px 10px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #view-sim .chat-composer {
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px 14px;
+      background: rgba(12, 12, 16, 0.9);
+      border-top: 1px solid var(--glass-border);
+      flex-shrink: 0;
+    }
+
+    #view-sim .chat-input {
+      flex: 1;
+      min-height: 42px;
+      max-height: 120px;
+      resize: none;
+      border-radius: 22px !important;
+      padding: 10px 16px !important;
+    }
+
+    #view-sim .chat-send-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: var(--crimson);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* Coach modal — styles in styles.css; no backdrop blur stack */
+
+    /* Nav & chips */
+    .nav-btn {
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-radius: 12px;
+    }
+
+    .nav-btn.active {
+      background: rgba(255, 42, 84, 0.12) !important;
+      box-shadow: var(--glass-inset), 0 0 16px rgba(255, 42, 84, 0.15);
+    }
+
+    .nav-btn.vip-tab.active {
+      background: rgba(234, 192, 124, 0.1) !important;
+      box-shadow: var(--glass-inset), 0 0 16px rgba(234, 192, 124, 0.12);
+    }
+
+    .vip-pill {
+      font-size: 9px;
+      background: rgba(234, 192, 124, 0.08) !important;
+      border: 1px solid rgba(234, 192, 124, 0.25) !important;
+      box-shadow: var(--glass-inset), 0 0 12px rgba(234, 192, 124, 0.15);
+    }
+
+    .tod-player-tag,
+    .ch-btn,
+    .persona-card {
+      background: rgba(20, 20, 20, 0.55) !important;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border) !important;
+    }
+
+    .ch-btn.active {
+      box-shadow: var(--glass-inset), 0 0 20px rgba(255, 42, 84, 0.2) !important;
+    }
+
+    .sim-bubble.her {
+      background: rgba(25, 25, 25, 0.55) !important;
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border) !important;
+    }
+
+    #view-truth {
+      position: relative;
+      z-index: 2;
+    }
+
     .nav-icon { font-size: 20px; line-height: 1; }
-    .vip-pill { font-size: 9px; }
   </style>
 </head>
 <body>
   <div id="boot-error" class="boot-error hidden" role="alert"></div>
+  <div class="aurora-bg" aria-hidden="true"></div>
   <div class="noise-overlay" aria-hidden="true"></div>
 
   <div class="app-shell">
@@ -25,14 +460,11 @@
     </header>
 
     <main>
-      <section id="view-analyze" class="view" aria-label="מנוע תשובות">
+      <section id="view-analyze" class="view active" aria-label="משחק 4 תשובות">
         <div id="mount-analyze"></div>
       </section>
 
-      <section id="view-truth" class="view active" aria-label="אמת או חובה">
-        <div class="section-eyebrow">Truth or Dare</div>
-        <h2 class="section-title">אמת או חובה</h2>
-        <p class="section-desc">סובב את הבקבוק — קבל מתח לדייט.</p>
+      <section id="view-truth" class="view" aria-label="אמת או חובה">
         <div id="mount-truth"></div>
       </section>
 
@@ -46,17 +478,17 @@
     </main>
 
     <nav class="bottom-nav" aria-label="ניווט">
-      <button type="button" class="nav-btn" data-view="analyze">
-        <span class="nav-icon">💬</span>
-        <span>תשובות</span>
+      <button type="button" class="nav-btn active" data-view="analyze">
+        <span class="nav-icon">4️⃣</span>
+        <span>4 תשובות</span>
       </button>
-      <button type="button" class="nav-btn active" data-view="truth">
+      <button type="button" class="nav-btn" data-view="truth">
         <span class="nav-icon">🍾</span>
         <span>אמת/חובה</span>
       </button>
       <button type="button" class="nav-btn" data-view="sim">
-        <span class="nav-icon">🐛</span>
-        <span>אלפא</span>
+        <span class="nav-icon">💬</span>
+        <span>סימולטור</span>
       </button>
       <button type="button" class="nav-btn vip-tab" data-view="vip">
         <span class="nav-icon">📖</span>
@@ -65,6 +497,9 @@
     </nav>
   </div>
 
-  <script src="/app.bundle.js?v=4" defer></script>
+  <script src="/js/data/truth-dare-decks.js" defer></script>
+  <script src="/js/truth-or-dare-game.js" defer></script>
+  <script src="/js/psych-loader.js?v=129"></script>
+  <script src="/app.bundle.js?v=129" defer></script>
 </body>
 </html>

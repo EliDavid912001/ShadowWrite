@@ -4,7 +4,7 @@ export const SITUATIONS_DATA = [
     ch: ['app', 'whatsapp'],
     icon: '✨',
     cat: 'וואטסאפ',
-    title: 'אמרה שהיא פנויה / פנוי הערב',
+    title: 'אמרה שהיא פנויה הערב',
     keywords: ['פנויה', 'פנוי', 'פנויות', 'פנוי הערב'],
     responses: {
       alpha: { text: 'שומעת. תתארגני ל-21:00. אוסף אותך לדרינק.' },
@@ -18,7 +18,7 @@ export const SITUATIONS_DATA = [
     ch: ['app'],
     icon: '💬',
     cat: 'אפליקציית היכרויות',
-    title: 'שלחתי הי — חזר רק חחח',
+    title: 'חזר רק חחח',
     keywords: ['חחח', 'hahaha', 'lol'],
     responses: {
       alpha: { text: 'חחח זה לא תשובה. דברי.' },
@@ -32,7 +32,7 @@ export const SITUATIONS_DATA = [
     ch: ['whatsapp', 'app'],
     icon: '👻',
     cat: 'וואטסאפ',
-    title: 'גוסטינג — נעלמה בלי סיבה',
+    title: 'גוסטינג',
     keywords: ['גוסטינג', 'ghosting', 'נעלמה'],
     responses: {
       alpha: { text: 'ברור. כשתרצי — את יודעת איפה למצוא אותי.' },
@@ -46,10 +46,10 @@ export const SITUATIONS_DATA = [
     ch: ['app', 'whatsapp'],
     icon: '⏰',
     cat: 'דייטים',
-    title: 'אמרה שמוקדם מדי לפגוש',
+    title: 'מוקדם מדי לפגוש',
     keywords: ['מוקדם', 'לפגוש'],
     responses: {
-      alpha: { text: 'יודע. אני לא רץ לשום מקום — את כן?' },
+      alpha: { text: 'פחות מקלדת יאללה' },
       beta: { text: 'כמובן, אני מבין אותך לגמרי. ניכר בקצב שנוח לך.' },
       witty: { text: 'טוב שאמרת — כי גם אני עוד לא החלטתי אם אני רוצה.' },
       friendly: { text: 'לגמרי מכבד את זה. נכיר קצת יותר קודם.' }
@@ -57,7 +57,7 @@ export const SITUATIONS_DATA = [
   },
   {
     id: 'phone_boyfriend',
-    ch: ['phone', 'app', 'whatsapp'],
+    ch: ['app', 'whatsapp'],
     icon: '💔',
     cat: 'שיחת טלפון',
     title: 'אמרה שיש לה חבר',
@@ -71,7 +71,7 @@ export const SITUATIONS_DATA = [
   },
   {
     id: 'ip_end_date',
-    ch: ['inperson'],
+    ch: ['app', 'whatsapp'],
     icon: '🌙',
     cat: 'פנים מול פנים',
     title: 'סיום דייט מוצלח',
@@ -85,10 +85,10 @@ export const SITUATIONS_DATA = [
   }
 ];
 
-export const QUICK_TAGS = ['חחח', 'גוסטינג', 'יש לה חבר', 'מוקדם מדי', 'דייט', 'ריד סיין'];
+export const QUICK_TAGS = ['פנויה', 'חחח', 'גוסטינג', 'מוקדם מדי', 'דייט'];
 
 export const PERSONA_INFO = {
-  alpha: { label: '🐺 אלפא', sub: 'Ars-Lite · פקודות · בלי שאלות' },
+  alpha: { label: '🐺 אלפא', sub: 'push-pull · 2-7 מילים' },
   beta: { label: 'בטא', sub: 'רך · מתנצל · מרצה' },
   witty: { label: 'שנון', sub: 'עוקץ · משחק מסגרת' },
   friendly: { label: 'חברי', sub: 'חם · ישיר · בלי לחץ' }

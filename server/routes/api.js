@@ -56,7 +56,7 @@ router.post('/analyze', async (req, res) => {
     return res.status(400).json({ error: 'חסרה סיטואציה' });
   }
 
-  const validChannels = ['app', 'whatsapp', 'phone', 'inperson'];
+  const validChannels = ['app', 'whatsapp'];
   const ch = validChannels.includes(channel) ? channel : 'app';
 
   try {

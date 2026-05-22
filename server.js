@@ -4,6 +4,12 @@ const axios = require('axios');
 const path = require('path');
 require('dotenv').config();
 
+const { runSimulationEngine, formatChatError, CHAT_MODEL } = require('./server/simulation-engine');
+const { runScenario, formatScenarioError, GEMINI_MODEL } = require('./server/scenario-engine');
+const { runCoachFeedback, formatCoachError } = require('./server/coach-engine');
+const promptManager = require('./server/promptManager');
+const { runAlphaSimTurn, runAlphaSimSummary } = require('./server/alpha-simulator');
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '64kb' }));
@@ -21,23 +27,28 @@ app.use(
   })
 );
 
-const apiKey = process.env.GROQ_API_KEY;
-if (!apiKey) {
-  console.error('❌ ERROR: GROQ_API_KEY is missing from .env file!');
+const groqKey = process.env.GROQ_API_KEY?.trim();
+const geminiKey = process.env.GEMINI_API_KEY?.trim();
+
+if (!geminiKey) {
+  console.error('❌ ERROR: GEMINI_API_KEY is missing — /api/scenario will fail');
 } else {
-  console.log('✅ API Key detected: ' + apiKey.substring(0, 7) + '...');
-  console.log('✅ Analyze engine v4 (Ars-Lite + few-shot)');
+  console.log('✅ Gemini key (4 answers + chat + coach): ' + geminiKey.substring(0, 7) + '...');
 }
+
+if (!groqKey) {
+  console.warn('⚠️ GROQ_API_KEY missing — alpha-sim only (optional)');
+} else {
+  console.log('✅ Groq key (alpha-sim): ' + groqKey.substring(0, 7) + '...');
+}
+
+console.log(
+  `✅ Routes: /api/scenario (${GEMINI_MODEL}) | /api/chat (${CHAT_MODEL}) | /api/feedback (Gemini coach)`
+);
+console.log('✅ Prompt rules: promptManager.js');
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
-
-const {
-  buildAnalyzeMessages,
-  sanitizeResponses,
-  enforceAlphaRules,
-  responsesLookRobotic
-} = require('./server/prompts/archetypes');
 
 function groqHeaders() {
   return {
@@ -51,169 +62,201 @@ function parseGroqJson(raw) {
   return JSON.parse(clean);
 }
 
-// ── 4 Archetypes ──────────────────────────────────────
-app.post('/api/analyze', async (req, res) => {
-  const { situation, channel } = req.body;
+function getChatHistoryFromBody(body) {
+  if (Array.isArray(body.chat_history)) return body.chat_history;
+  if (Array.isArray(body.chatHistory)) return body.chatHistory;
+  return [];
+}
 
-  if (!process.env.GROQ_API_KEY) {
-    return res.status(500).json({ error: 'המפתח לא מוגדר בשרת' });
-  }
-  if (!situation || !String(situation).trim()) {
-    return res.status(400).json({ error: 'חסרה סיטואציה' });
+/** Maya chat — Gemini + promptManager SIMULATOR_PROMPT */
+async function handleChat(req, res) {
+  if (!process.env.GEMINI_API_KEY?.trim()) {
+    return res.status(500).json({
+      error: 'מפתח Gemini לא מוגדר — הוסף GEMINI_API_KEY ל-.env'
+    });
   }
 
-  async function callAnalyze(strictRetry) {
-    const messages = buildAnalyzeMessages(situation, channel);
-    if (strictRetry) {
-      messages.push({
-        role: 'user',
-        content:
-          'RETRY: התשובה הקודמת הייתה רובוטית או העתיקה דוגמאות. כתוב מחדש מותאם לסיטואציה. אלפא בלי סימן שאלה. עברית מדוברת בלבד.'
-      });
-    }
-    const response = await axios.post(
-      GROQ_URL,
-      {
-        model: GROQ_MODEL,
-        messages,
-        temperature: strictRetry ? 0.35 : 0.15,
-        max_tokens: 500,
-        response_format: { type: 'json_object' }
-      },
-      { headers: groqHeaders() }
-    );
-    return sanitizeResponses(parseGroqJson(response.data.choices[0].message.content));
+  const situation = String(req.body.situation || req.body.message || '').trim();
+  if (!situation) {
+    return res.status(400).json({ error: 'חסרה הודעה' });
   }
 
   try {
-    let parsed = await callAnalyze(false);
-    if (!parsed.alpha || !parsed.beta || !parsed.witty || !parsed.friendly) {
-      throw new Error('תשובה לא שלמה מה-AI');
-    }
-    if (responsesLookRobotic(parsed)) {
-      console.warn('Analyze: robotic output, retrying...');
-      parsed = await callAnalyze(true);
-    }
-    parsed = enforceAlphaRules(String(situation).trim(), parsed);
-
-    res.json({ success: true, responses: parsed, channel: channel || 'app', engine: 'v4-ars' });
+    const text = await runSimulationEngine(getChatHistoryFromBody(req.body), situation);
+    const reply = String(text || '').trim() || 'חחח אוקיי';
+    console.log('[api/chat] reply:', reply.slice(0, 80));
+    res.json({ response: reply });
   } catch (err) {
-    console.error('API Error:', err.response?.data || err.message);
-    res.status(500).json({ error: 'שגיאה בעיבוד הנתונים' });
+    console.error('[api/chat] error:', err.message);
+    const errMsg = formatChatError(err);
+    if (err.isRateLimit) {
+      return res.status(429).json({ error: `מכסת Gemini — נסה שוב. (${errMsg})` });
+    }
+    res.status(500).json({ error: errMsg || 'שגיאה בצ׳אט' });
   }
-});
-
-// ── מנוע הסימולטור VIP ───────────────────────────────
-async function runSimulator(chatHistory, userReply) {
-  const history = Array.isArray(chatHistory) ? chatHistory : [];
-  const historyBlock =
-    history.length > 0
-      ? `\nCHAT HISTORY (oldest → newest):\n${history
-          .map((m) => `${m.role === 'assistant' ? 'HER' : 'HIM'}: ${m.content}`)
-          .join('\n')}\n`
-      : '';
-
-  const simulatorPrompt = `You are running a hyper-realistic dating simulator.
-There are two roles you must play simultaneously:
-
-1. THE GIRL: An attractive, 24-year-old Israeli girl. She gets a lot of attention. Casual Hebrew slang (יאללה, ברור, סבבה, מה נסגר). If the user gives dry 1-word answers ("כן", "בסדר", "חחח", "אוקיי", "נכון") — she does NOT say "מעניין", "ספר עוד", "איך היה היום", or ask him to open up. She loses interest, goes cold, teases sarcastically, or gives equally dry energy. She is NOT an AI assistant. No robotic filler.
-
-2. THE ELITE COACH: World's top dating psychologist for Israeli men. Mechanically dissects the user's text — frame, investment, who leads, ערס vs needy.
-
-${historyBlock}
-User Last Reply: "${userReply}"
-
-Analyze the user's reply in full chat context.
-ALPHA = ערס grounded, leads, creates tension or moves toward meetup, high value — short is OK only if it still holds frame ("יודע. סוף.", "ברור. חמישי?").
-BETA = needy, apologetic, over-investing, reactive, OR dry 1-word that dumps conversational burden on her ("בסדר", "כן", "חחח" alone).
-
-Return ONLY valid JSON with NO markdown:
-{
-  "isBeta": true or false,
-  "analysis": "If isBeta true: deep 3-sentence psychological breakdown in Hebrew from Elite Coach — name the EXACT failed mechanic (e.g. forcing her to carry the chat). If false: exactly 'תגובה חזקה.'",
-  "nextGirlReply": "If isBeta false: her next natural human Hebrew text — slang OK, emojis rare. If he was previously dry, she stays cold/teasing. If isBeta true: empty string \"\""
-}`;
-
-  const messages = [
-    {
-      role: 'system',
-      content:
-        'You simulate realistic Israeli dating dynamics. Never use AI filler ("מעניין", "ספר עוד", "איך היה היום שלך"). Return pure JSON only.'
-    },
-    { role: 'user', content: simulatorPrompt }
-  ];
-
-  const response = await axios.post(
-    GROQ_URL,
-    {
-      model: GROQ_MODEL,
-      messages,
-      temperature: 0.7,
-      max_tokens: 550
-    },
-    { headers: groqHeaders() }
-  );
-
-  return parseGroqJson(response.data.choices[0].message.content);
 }
 
-app.post('/api/simulate', async (req, res) => {
-  const { chatHistory, userReply } = req.body;
+app.post('/api/chat', handleChat);
+app.post('/api/simulate/chat', handleChat);
 
-  if (!process.env.GROQ_API_KEY) {
-    return res.status(500).json({ error: 'המפתח לא מוגדר בשרת' });
+async function handleCoachFeedback(req, res) {
+  if (!process.env.GEMINI_API_KEY?.trim()) {
+    return res.status(500).json({ error: 'מפתח Gemini לא מוגדר — הוסף GEMINI_API_KEY ל-.env' });
   }
-  if (!userReply || !String(userReply).trim()) {
+
+  const history = getChatHistoryFromBody(req.body);
+  try {
+    const report = await runCoachFeedback(history);
+    res.json({
+      score: report.score,
+      analysis: report.analysis,
+      improvements: report.improvements,
+      feedback: report.analysis
+    });
+  } catch (err) {
+    console.error('[api/feedback] error:', err.message);
+    const errMsg = formatCoachError(err);
+    if (err.isRateLimit) {
+      return res.status(429).json({ error: `מכסת Gemini — נסה שוב. (${errMsg})` });
+    }
+    if (err.message?.includes('2 הודעות')) {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: errMsg || 'שגיאה ביצירת הסיכום' });
+  }
+}
+
+app.post('/api/feedback', handleCoachFeedback);
+
+/** Maya chat end button — Gemini coach (legacy path alias) */
+app.post('/api/session/analyze', handleCoachFeedback);
+
+async function handleScenario(req, res) {
+  if (!process.env.GEMINI_API_KEY?.trim()) {
+    return res.status(500).json({ error: 'מפתח Gemini לא מוגדר בשרת — הוסף GEMINI_API_KEY ל-.env' });
+  }
+
+  const situation = String(
+    req.body.situation ?? req.body.message ?? req.body.text ?? ''
+  ).trim();
+
+  if (!situation) {
+    return res.status(400).json({ error: 'חסרה סיטואציה' });
+  }
+
+  const channel = ['app', 'whatsapp'].includes(req.body.channel)
+    ? req.body.channel
+    : 'app';
+
+  const stage = req.body.stage ?? req.body.relationshipStage ?? 'start';
+  const isVIP = req.body.isVIP === true || req.body.isVip === true;
+
+  console.log('[api/scenario] request:', {
+    situation: situation.slice(0, 80),
+    channel,
+    stage,
+    isVIP
+  });
+
+  try {
+    const responses = await runScenario(situation, channel, stage, { isVIP });
+    console.log('[api/scenario] ok:', {
+      alpha: responses.alpha?.slice(0, 40),
+      beta: responses.beta?.slice(0, 40)
+    });
+    res.json({ success: true, responses, channel });
+  } catch (err) {
+    console.error('[api/scenario] error:', err);
+    if (err.stack) console.error(err.stack);
+
+    const errMsg = formatScenarioError(err);
+    if (err.isRateLimit || err.response?.status === 429) {
+      return res.status(429).json({
+        error: `מכסת Gemini — נסה שוב בעוד כמה דקות. (${errMsg})`
+      });
+    }
+    if (/404|not found|לא זמין/i.test(errMsg)) {
+      return res.status(502).json({ error: errMsg });
+    }
+    if (errMsg.includes('API key') || errMsg.includes('API_KEY') || err.response?.status === 401) {
+      return res.status(401).json({ error: 'מפתח Gemini לא תקין' });
+    }
+    res.status(500).json({
+      error: `שגיאה ביצירת 4 התשובות: ${errMsg}`
+    });
+  }
+}
+
+app.post('/api/scenario', handleScenario);
+
+/** Legacy alias for 4-answers clients */
+app.post('/api/analyze', async (req, res) => {
+  const hist = getChatHistoryFromBody(req.body);
+  if (hist.length > 0) return handleChat(req, res);
+  return handleScenario(req, res);
+});
+
+app.post('/api/analyze/summary', handleCoachFeedback);
+
+// ── Alpha Training simulator (נפרד מסימולציית מאיה) ──
+function alphaSimMissingKey(res) {
+  return res.status(500).json({ error: 'המפתח לא מוגדר בשרת — בדוק .env' });
+}
+
+function groqErrorMessage(err) {
+  const data = err.response?.data;
+  if (data?.error?.message) return data.error.message;
+  if (typeof data?.error === 'string') return data.error;
+  return err.message || 'שגיאה במנוע הסימולציה';
+}
+
+async function handleAlphaTurn(req, res) {
+  if (!process.env.GROQ_API_KEY?.trim()) return alphaSimMissingKey(res);
+
+  const userReply = String(req.body.userReply || req.body.message || '').trim();
+  if (!userReply) {
     return res.status(400).json({ error: 'חסרה תגובה' });
   }
 
   try {
-    const parsed = await runSimulator(chatHistory, String(userReply).trim());
-    const isBeta = Boolean(parsed.isBeta);
+    const parsed = await runAlphaSimTurn(getChatHistoryFromBody(req.body), userReply);
     res.json({
       success: true,
-      isBeta,
-      analysis: parsed.analysis || (isBeta ? 'נפילת ערך — לא מוביל.' : 'תגובה חזקה.'),
-      reframeHint: isBeta ? (parsed.reframeHint || '') : '',
-      nextGirlReply: isBeta ? '' : (parsed.nextGirlReply || '').trim()
+      isBeta: parsed.isBeta,
+      analysis: parsed.analysis,
+      reframeHint: parsed.isBeta ? parsed.reframeHint || 'קצר. ערס. מוביל — בלי להתנצל.' : '',
+      nextGirlReply: parsed.isBeta ? '' : parsed.nextGirlReply,
+      engine: 'alpha-sim-v3'
     });
   } catch (err) {
-    console.error('Simulate Error:', err.response?.data || err.message);
-    res.status(500).json({ error: 'שגיאה במנוע הסימולציה' });
+    console.error('Alpha turn Error:', err.response?.data || err.message);
+    res.status(500).json({ error: groqErrorMessage(err) });
   }
-});
+}
 
-// תאימות ל-frontend הישן
-app.post('/api/alpha-sim', async (req, res) => {
-  const { message, context, chatHistory } = req.body;
+async function handleAlphaSummary(req, res) {
+  if (!process.env.GROQ_API_KEY?.trim()) return alphaSimMissingKey(res);
 
-  if (!process.env.GROQ_API_KEY) {
-    return res.status(500).json({ error: 'המפתח לא מוגדר בשרת' });
+  const history = getChatHistoryFromBody(req.body);
+  const userTurns = history.filter((m) => m.role === 'user').length;
+  if (userTurns < 2) {
+    return res.status(400).json({ error: 'שלח לפחות 2 הודעות לפני סיכום' });
   }
-  if (!message || !String(message).trim()) {
-    return res.status(400).json({ error: 'חסרה הודעה' });
-  }
-
-  const history = Array.isArray(chatHistory)
-    ? chatHistory
-    : context
-      ? [{ role: 'user', content: String(context) }]
-      : [];
 
   try {
-    const parsed = await runSimulator(history, String(message).trim());
-    res.json({
-      success: true,
-      isBeta: Boolean(parsed.isBeta),
-      errorHe: parsed.analysis || 'תגובה נויה מדי.',
-      reframeHint: parsed.reframeHint || 'קצר. ערס. יודע — בלי להתנצל.',
-      nextGirlReply: parsed.nextGirlReply || ''
-    });
+    const report = await runAlphaSimSummary(history);
+    res.json({ success: true, report, engine: 'alpha-summary-v1' });
   } catch (err) {
-    console.error('Alpha-sim Error:', err.response?.data || err.message);
-    res.status(500).json({ error: 'שגיאה במנוע הסימולציה' });
+    console.error('Alpha summary Error:', err.response?.data || err.message);
+    res.status(500).json({ error: groqErrorMessage(err) });
   }
-});
+}
+
+app.post('/api/alpha-sim/turn', handleAlphaTurn);
+app.post('/api/alpha-sim/summary', handleAlphaSummary);
+app.post('/api/simulate', handleAlphaTurn);
+app.post('/api/simulate/summary', handleAlphaSummary);
+app.post('/api/alpha-sim', handleAlphaTurn);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Matrix Active', hasKey: Boolean(process.env.GROQ_API_KEY) });
