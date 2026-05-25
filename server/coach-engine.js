@@ -2,7 +2,11 @@
  * Dating coach feedback — POST /api/feedback (Gemini JSON)
  */
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { COACH_PROMPT } = require('./promptManager');
+const {
+  buildCoachSystemPrompt,
+  buildCoachUserPrompt: buildCoachUserPromptWithDifficulty,
+  normalizeDifficulty
+} = require('./sim-difficulty');
 
 const COACH_MODEL = (process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim();
 const COACH_FALLBACKS = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash-lite'];
@@ -65,15 +69,12 @@ function normalizeHistory(chatHistory) {
     .filter(Boolean);
 }
 
-function buildCoachUserPrompt(chatHistory) {
-  const lines = normalizeHistory(chatHistory).map((m) => {
-    const who = m.role === 'her' ? 'HER' : 'USER';
-    return `[${who}] ${m.content}`;
-  });
-  if (!lines.length) {
-    return 'No messages yet. Return score 0 and brief Hebrew analysis.';
-  }
-  return `Analyze this WhatsApp thread (USER = Israeli male trainee, HER = simulated woman):\n\n${lines.join('\n')}`;
+function buildCoachUserPrompt(chatHistory, difficulty = 'medium') {
+  const hist = normalizeHistory(chatHistory).map((m) => ({
+    role: m.role === 'her' ? 'assistant' : 'user',
+    content: m.content
+  }));
+  return buildCoachUserPromptWithDifficulty(hist, difficulty);
 }
 
 function coachJsonLooksTruncated(text, finishReason) {
@@ -104,11 +105,19 @@ function safeParseCoachJson(raw) {
   return JSON.parse(text.slice(start, end + 1));
 }
 
-function normalizeCoachResult(parsed) {
+function normalizeCoachResult(parsed, difficulty = 'medium') {
   let score = Number(parsed?.score);
   if (!Number.isFinite(score)) score = 50;
   if (score <= 10 && score >= 0) score = score * 10;
   score = Math.max(0, Math.min(100, Math.round(score)));
+
+  const level = normalizeDifficulty(difficulty);
+  if (level === 'hard' && score > 55) {
+    score = Math.round(55 + (score - 55) * 0.65);
+  } else if (level === 'easy' && score < 40 && score > 0) {
+    score = Math.min(100, score + 12);
+  }
+  score = Math.max(0, Math.min(100, score));
 
   const analysis = String(parsed?.analysis || parsed?.feedback || '').trim();
   let improvements = parsed?.improvements;
@@ -127,15 +136,17 @@ function normalizeCoachResult(parsed) {
   return { score, analysis: analysis || 'יש מקום לחיזוק המסגרת והאנרגיה בשיחה.', improvements };
 }
 
-async function geminiCoachComplete(userPrompt, maxOutputTokens = COACH_MAX_TOKENS) {
+async function geminiCoachComplete(userPrompt, difficulty = 'medium', maxOutputTokens = COACH_MAX_TOKENS) {
   const genAI = getGeminiClient();
+  const level = normalizeDifficulty(difficulty);
+  const systemInstruction = buildCoachSystemPrompt(level);
   let lastErr;
 
   for (const modelName of coachModelCandidates()) {
     try {
       const model = genAI.getGenerativeModel({
         model: modelName,
-        systemInstruction: COACH_PROMPT,
+        systemInstruction,
         generationConfig: {
           temperature: 0.4,
           maxOutputTokens,
@@ -165,16 +176,17 @@ async function geminiCoachComplete(userPrompt, maxOutputTokens = COACH_MAX_TOKEN
   throw lastErr || new Error('No Gemini model available for coach');
 }
 
-async function runCoachFeedback(chatHistory) {
+async function runCoachFeedback(chatHistory, difficulty = 'medium') {
   const hist = normalizeHistory(chatHistory);
   const userTurns = hist.filter((m) => m.role === 'user').length;
   if (userTurns < 2) {
     throw new Error('שלח לפחות 2 הודעות לפני סיכום');
   }
 
-  const raw = await geminiCoachComplete(buildCoachUserPrompt(hist));
+  const level = normalizeDifficulty(difficulty);
+  const raw = await geminiCoachComplete(buildCoachUserPrompt(hist, level), level);
   const parsed = safeParseCoachJson(raw);
-  return normalizeCoachResult(parsed);
+  return normalizeCoachResult(parsed, level);
 }
 
 module.exports = {

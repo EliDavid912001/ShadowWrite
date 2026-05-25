@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Heebo:wght@300;400;500;700&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=128">
+  <link rel="stylesheet" href="/css/styles.css?v=133">
   <style>
     /* ═══ Dark Script · Pro-Max Design System ═══
        OLED + Liquid Glass + 3D Hyperrealism */
@@ -286,6 +286,27 @@
     #view-sim .chat-sim-name { font-weight: 700; font-size: 14px; }
     #view-sim .chat-sim-status { font-size: 11px; color: #4caf50; }
 
+    #view-sim .chat-sim-restart {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(234, 192, 124, 0.35);
+      background: rgba(234, 192, 124, 0.08);
+      color: var(--gold);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.25s ease, background 0.2s;
+      flex-shrink: 0;
+    }
+    #view-sim .chat-sim-restart:hover {
+      background: rgba(234, 192, 124, 0.18);
+      transform: rotate(180deg);
+    }
+
     #view-sim .chat-end-btn {
       font-size: 10px;
       padding: 8px 10px;
@@ -500,6 +521,6 @@
   <script src="/js/data/truth-dare-decks.js" defer></script>
   <script src="/js/truth-or-dare-game.js" defer></script>
   <script src="/js/psych-loader.js?v=129"></script>
-  <script src="/app.bundle.js?v=129" defer></script>
+  <script src="/app.bundle.js?v=133" defer></script>
 </body>
 </html>

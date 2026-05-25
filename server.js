@@ -7,6 +7,7 @@ require('dotenv').config();
 const { runSimulationEngine, formatChatError, CHAT_MODEL } = require('./server/simulation-engine');
 const { runScenario, formatScenarioError, GEMINI_MODEL } = require('./server/scenario-engine');
 const { runCoachFeedback, formatCoachError } = require('./server/coach-engine');
+const { validateSimSessionBody } = require('./server/schema/simulator-session');
 const promptManager = require('./server/promptManager');
 const { runAlphaSimTurn, runAlphaSimSummary } = require('./server/alpha-simulator');
 
@@ -81,11 +82,20 @@ async function handleChat(req, res) {
     return res.status(400).json({ error: 'חסרה הודעה' });
   }
 
+  const session = validateSimSessionBody(req.body);
+  if (!session.ok) {
+    return res.status(400).json({ error: session.error });
+  }
+
   try {
-    const text = await runSimulationEngine(getChatHistoryFromBody(req.body), situation);
+    const text = await runSimulationEngine(
+      getChatHistoryFromBody(req.body),
+      situation,
+      session.difficulty
+    );
     const reply = String(text || '').trim() || 'חחח אוקיי';
-    console.log('[api/chat] reply:', reply.slice(0, 80));
-    res.json({ response: reply });
+    console.log('[api/chat] reply:', reply.slice(0, 80), 'diff:', session.difficulty);
+    res.json({ response: reply, difficulty: session.difficulty });
   } catch (err) {
     console.error('[api/chat] error:', err.message);
     const errMsg = formatChatError(err);
@@ -105,13 +115,19 @@ async function handleCoachFeedback(req, res) {
   }
 
   const history = getChatHistoryFromBody(req.body);
+  const session = validateSimSessionBody(req.body);
+  if (!session.ok) {
+    return res.status(400).json({ error: session.error });
+  }
+
   try {
-    const report = await runCoachFeedback(history);
+    const report = await runCoachFeedback(history, session.difficulty);
     res.json({
       score: report.score,
       analysis: report.analysis,
       improvements: report.improvements,
-      feedback: report.analysis
+      feedback: report.analysis,
+      difficulty: session.difficulty
     });
   } catch (err) {
     console.error('[api/feedback] error:', err.message);

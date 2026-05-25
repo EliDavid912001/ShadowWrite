@@ -3,6 +3,7 @@
  */
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { buildChatSystemPrompt } = require('./promptManager');
+const { normalizeDifficulty, getChatTemperature } = require('./sim-difficulty');
 const { formatScenarioError, GEMINI_MODEL } = require('./scenario-engine');
 
 const CHAT_MODEL = (process.env.GEMINI_MODEL || GEMINI_MODEL || 'gemini-2.5-flash').trim();
@@ -143,11 +144,13 @@ function toPlainWomanText(raw) {
   return text.replace(/\.+$/g, '').trim();
 }
 
-async function geminiChatReply(chatHistory, userMessage) {
+async function geminiChatReply(chatHistory, userMessage, difficulty = 'medium') {
   const genAI = getGeminiClient();
-  const systemInstruction = buildChatSystemPrompt();
+  const level = normalizeDifficulty(difficulty);
+  const systemInstruction = buildChatSystemPrompt(level);
   const history = buildGeminiChatHistory(chatHistory, userMessage);
   const msg = String(userMessage || '').trim();
+  const temperature = getChatTemperature(level);
   let lastErr;
 
   for (const modelName of chatModelCandidates()) {
@@ -156,7 +159,7 @@ async function geminiChatReply(chatHistory, userMessage) {
         model: modelName,
         systemInstruction,
         generationConfig: {
-          temperature: 0.75,
+          temperature,
           maxOutputTokens: CHAT_MAX_OUTPUT_TOKENS
         }
       });
@@ -181,9 +184,9 @@ async function geminiChatReply(chatHistory, userMessage) {
 }
 
 /** Chat turn — plain text, no JSON mode */
-async function runSimulationEngine(chatHistory, situation) {
+async function runSimulationEngine(chatHistory, situation, difficulty = 'medium') {
   const userMessage = String(situation || '').trim();
-  const raw = await geminiChatReply(chatHistory, userMessage);
+  const raw = await geminiChatReply(chatHistory, userMessage, difficulty);
   const text = toPlainWomanText(raw);
   return text || 'חחח אוקיי';
 }

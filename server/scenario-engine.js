@@ -15,12 +15,18 @@ const {
   resolveScenarioStage
 } = require('./promptManager');
 
+/**
+ * Tactician spec: alpha 3-10 words, witty 3-10 (single emoji allowed),
+ * friendly 6-15 (full sentence + emoji), beta 6-15 (submissive emojis).
+ */
 const ARCHETYPE_WORD_LIMITS = {
-  alpha: { max: 7, emojis: false },
-  witty: { max: 8, emojis: false },
+  alpha: { max: 10, emojis: false },
+  witty: { max: 10, emojis: true },
   beta: { max: 15, emojis: true },
   friendly: { max: 15, emojis: true }
 };
+
+const FRIENDLY_MIN_TEXT_WORDS = 3;
 
 const EMOJI_RE = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
 
@@ -202,9 +208,20 @@ function ensureBetaEmojis(text) {
   return `${text} 🥺`.trim();
 }
 
+/**
+ * Friendly MUST be a full engaging sentence + emoji.
+ * Emoji-only outputs are absolutely forbidden — if the model lazily replies
+ * with just a smile, we substitute a complete fallback line.
+ */
 function ensureFriendlyEmojis(text) {
-  if (/[😊🫶😴💤]/.test(text)) return text;
-  return `${text} 😊`.trim();
+  const raw = String(text || '').trim();
+  const noEmoji = stripEmojis(raw).trim();
+  const textWords = noEmoji.split(/\s+/).filter(Boolean);
+  if (textWords.length < FRIENDLY_MIN_TEXT_WORDS) {
+    return 'זורם לגמרי 😊 מה התוכניות שלך להמשך';
+  }
+  if (/[😊🫶😴💤❤️🙏]/.test(raw)) return raw;
+  return `${raw} 😊`.trim();
 }
 
 function polishScenarioResponses(responses) {
@@ -420,7 +437,7 @@ async function runScenario(situation, channel, scenarioStage = 'start', options 
     try {
       const retryUser = `${userPrompt}
 
-RETRY. Same rules from system prompt. Output ONLY raw JSON: {"alpha":"...","beta":"...","witty":"...","friendly":"..."} — no markdown.`;
+RETRY. Alpha = Tactician — flawless native Israeli Hebrew, 3-10 words, calculated charm + push-pull + conditional validation, absolute authority and high value. NO raw needy validation, NO begging, NO AI-formal words, NO trailing period. Friendly MUST be a full sentence + emoji (NEVER emoji-only). Same rules from system prompt. Output ONLY raw JSON: {"alpha":"...","beta":"...","witty":"...","friendly":"..."} — no markdown.`;
       const retryRaw = await geminiScenarioComplete(systemInstruction, retryUser, 0.42);
       parsed = safeParseScenarioJson(retryRaw);
       responses = polishScenarioResponses(sanitizeResponses(responsesFromParsed(parsed)));

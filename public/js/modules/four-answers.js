@@ -69,17 +69,12 @@ export function initFourAnswers(container) {
     <h2 class="section-title">מנוע התשובות</h2>
     <p class="section-desc">תאר סיטואציה — 4 ארכיטיפים קשיחים.</p>
 
-    <div class="ch-grid ch-grid--two" id="scenarioChGrid">
-      <button type="button" class="ch-btn active" data-ch="app"><span class="nm">אפליקציה</span></button>
-      <button type="button" class="ch-btn" data-ch="whatsapp"><span class="nm">וואטסאפ</span></button>
-    </div>
-
     <div class="tags-row" id="scenarioTags"></div>
 
     <div class="rel-stage-row" id="scenarioRelStageRow" role="group" aria-label="שלב קשר">
-      <button type="button" class="rel-stage-chip active" data-stage="start">🧊 התחלה</button>
-      <button type="button" class="rel-stage-chip" data-stage="middle">🔥 אמצע</button>
-      <button type="button" class="rel-stage-chip" data-stage="deep">💍 עמוק</button>
+      <button type="button" class="rel-stage-chip active" data-stage="start">🧊 קשר בהתחלה (חודש)</button>
+      <button type="button" class="rel-stage-chip" data-stage="middle">🔥 קשר אמצע (1-4)</button>
+      <button type="button" class="rel-stage-chip" data-stage="deep">💍 קשר רציני (4+)</button>
     </div>
 
     <div class="input-wrap">
@@ -111,15 +106,6 @@ export function initFourAnswers(container) {
       relStageRow.querySelectorAll('.rel-stage-chip').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
       selectedStage = chip.dataset.stage;
-    });
-  });
-
-  container.querySelectorAll('#scenarioChGrid .ch-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      container.querySelectorAll('#scenarioChGrid .ch-btn').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      curCh = btn.dataset.ch;
-      renderPresets('');
     });
   });
 

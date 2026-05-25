@@ -390,6 +390,139 @@ body {
   padding: 16px 14px 24px;
 }
 
+/* Alpha sim — difficulty picker */
+.sim-difficulty-screen {
+  padding: 8px 4px 24px;
+  min-height: calc(100dvh - 140px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sim-difficulty-screen .section-title {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.sim-difficulty-screen .section-desc {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.sim-difficulty-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.sim-diff-card {
+  position: relative;
+  text-align: right;
+  padding: 18px 18px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(18, 18, 24, 0.85);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+  overflow: hidden;
+}
+
+.sim-diff-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.sim-diff-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.sim-diff-card .sim-diff-label {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+.sim-diff-card .sim-diff-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+
+.sim-diff-card .sim-diff-persona {
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+}
+
+.sim-diff--easy {
+  border-color: rgba(76, 175, 80, 0.45);
+  box-shadow: inset 0 0 40px rgba(76, 175, 80, 0.08);
+}
+
+.sim-diff--easy::before {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.35), rgba(234, 192, 124, 0.2));
+}
+
+.sim-diff--medium {
+  border-color: rgba(255, 152, 0, 0.45);
+  box-shadow: inset 0 0 40px rgba(255, 152, 0, 0.06);
+}
+
+.sim-diff--medium::before {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.35), rgba(234, 192, 124, 0.22));
+}
+
+.sim-diff--hard {
+  border-color: rgba(183, 28, 28, 0.55);
+  box-shadow: inset 0 0 40px rgba(255, 42, 84, 0.08);
+}
+
+.sim-diff--hard::before {
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.5), rgba(234, 192, 124, 0.15));
+}
+
+.sim-diff-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-top: 4px;
+  letter-spacing: 0.06em;
+}
+
+.sim-diff-badge.sim-diff--easy {
+  background: rgba(76, 175, 80, 0.2);
+  color: #81c784;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.sim-diff-badge.sim-diff--medium {
+  background: rgba(255, 152, 0, 0.15);
+  color: #ffb74d;
+  border: 1px solid rgba(255, 152, 0, 0.35);
+}
+
+.sim-diff-badge.sim-diff--hard {
+  background: rgba(183, 28, 28, 0.25);
+  color: #ef9a9a;
+  border: 1px solid rgba(183, 28, 28, 0.45);
+}
+
+.chat-sim-header .sim-diff-badge {
+  margin-top: 0;
+  margin-right: 0;
+}
+
 .chat-sim {
   display: flex;
   flex-direction: column;

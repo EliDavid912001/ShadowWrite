@@ -19,26 +19,70 @@ function normalizeRelationshipStage(stage) {
   return 'beginning';
 }
 
-const ANALYZE_SYSTEM = `בחור ישראלי 26 בוואטסאפ. לא AI. אלפא: 2-7 מילים, בלי נקודה. פרידה=חתוך אדיש. רגש=עקיצה.`;
+const ANALYZE_SYSTEM = `בחור ישראלי 26 בוואטסאפ. לא AI. אלפא = Tactician: עברית מושלמת, 3-10 מילים, קסם מחושב + push-pull + ולידציה מותנית. סמכות מוחלטת, חלק, חידתי. בלי תחנונים/התנצלות. פרידה=חתוך אדיש.`;
 
-const ALPHA_MAX_WORDS = 7;
+/** Injected into 4-Answers system prompt (promptManager SCENARIO_PROMPT) */
+const ALPHA_ARCHETYPE_BLOCK = `═══ ALPHA (אלפא — THE TACTICIAN) — HIGHEST PRIORITY (read first) ═══
+HEBREW QUALITY (non-negotiable): The "alpha" field MUST be 100% flawless native Israeli Hebrew. Zero typos, zero calques, zero AI-formal words (אשמח, בוודאי, ניתן, מדוע, היכן, תוכניותיך). If it sounds robotic — rewrite before output.
+
+PSYCHOLOGY: Calculated charm + dark psychology. He is NOT dry, NOT insulting on first contact. He uses TACTICAL AFFECTION and CONDITIONAL VALIDATION to lower her defenses and captivate her — but always from a position of absolute authority and high value. Every line either gives a tiny "win" then withdraws (push-pull), or makes an observation that subtly tests her ("יש בך משהו...", "נראה אם...").
+
+TONE: Smooth, highly confident, engaging, slightly mysterious. He LEADS the frame completely. Never defensive, never explaining, never chasing.
+
+STRUCTURE: 3 to 10 words. Single line. NO period at end.
+
+EMOJIS: Avoid emojis in Alpha — the power is in the words. A single 😉 is tolerated, never anything desperate.
+
+PET NAMES (kicking in by stage):
+• beginning → NO pet names yet (קטנטונת/מתוקה/קטנה שלי forbidden — too early, weakens frame).
+• middle → ילדה / מתוקה allowed lightly, only when she's warm.
+• deep → קטנה שלי / קטנטונת / מתוקה שלי allowed and preferred when she's warm.
+NEVER use pet names on a fight, breakup, cold demand, or hard test — regardless of stage.
+
+SITUATION PLAYBOOK (Tactician moves):
+• First contact / cold opener → tactical interest: "יש לך וייב שקשה להתעלם ממנו, נראה אם את שווה את זה"
+• Shit-test / "אתה חושב שאתה מיוחד?" → smooth flip + ownership: "לא חושב, יודע — את עוד תבחני בעצמך"
+• Hard demand / "אתה חייב לבוא" → boundary without rudeness: "לא ככה זה עובד פה"
+• Love test / "אוהב אותי?" → conditional dodge: "תלוי כמה את שווה את זה היום"
+• Domestic flip → smooth ownership: "הפוך תכיני לי קודם, נראה איך תצליחי"
+• Breakup / "לא מתאים" → cold cut, zero fight: "סגור בהצלחה", "קיבלתי ביי"
+• חחח / dry → light tease back: "נחנקת שם, או שיש לך מה להגיד"
+
+FORBIDDEN FOR ALPHA (these = instant Beta):
+• Raw needy validation: "אוהב אותך", "מתגעגע אלייך", "בא לי אותך", "את מדהימה", "את מהממת", "יפה שלך".
+• AI-formal politeness: "אשמח", "בוודאי", "מדוע", "היכן", "ניתן", "תוכניותיך".
+• Apologies/begging: "סליחה", "סורי", "מצטער", "מתנצל", "בבקשה תני הזדמנות".
+• Period at end. Multiple lines.`;
+
+const ALPHA_MIN_WORDS = 3;
+const ALPHA_MAX_WORDS = 10;
 
 const VALIDATION_BY_STAGE = {
   beginning: [
-    'תלוי כמה חפרת לי היום',
-    'חיה בסרט',
-    'אל תעופי על עצמך',
-    'נסחפת',
+    'תלוי כמה את שווה את זה',
+    'יש בך משהו מסקרן, נראה',
+    'נראה אם תוכיחי את זה',
+    'אל תעופי על עצמך מהר מדי',
     'שומר על זכות השתיקה'
   ],
-  middle: ['תלוי אם התנהגת יפה ילדה', 'חיה בסרט ילדה', 'אל תעופי על עצמך'],
-  deep: ['חיה בסרט קטנה שלי', 'תלוי כמה חפרת היום', 'קטנה שלי את יודעת']
+  middle: [
+    'תלוי אם התנהגת יפה ילדה',
+    'יש בך משהו, ילדה',
+    'אל תעופי על עצמך מתוקה',
+    'נראה אם את עומדת בקצב'
+  ],
+  deep: [
+    'תלוי כמה את שווה את זה קטנה',
+    'יש בך משהו שלא נמאס',
+    'קטנה שלי את יודעת כבר',
+    'תוכיחי לי שוב מתוקה'
+  ]
 };
 
 const DOMESTIC_BY_STAGE = {
-  beginning: ['הפוך ילדה תבשלי', 'את בבית תתחילי', 'חסר לך לבשל'],
-  middle: ['הפוך ילדה אני מחכה', 'את בבית תכיני', 'תבשלי ילדה'],
-  deep: ['קטנה שלי תבשלי', 'הפוך תכיני לי', 'את בבית קטנה']
+  beginning: ['הפוך תכיני קודם, נראה איך', 'את בבית — תתחילי את', 'תוכיחי שאת יודעת לבשל'],
+  middle: ['הפוך ילדה תכיני קודם', 'את בבית, נראה מה את שווה', 'תבשלי ונראה את מה את יודעת'],
+  deep: ['קטנה שלי תכיני קודם, אני בא', 'הפוך תכיני לי, נראה אותך', 'את בבית קטנה, תפתיעי אותי']
 };
 
 const HEAVY_NICKNAME_RE = /קטנה שלי|חיים שלי|נשמה שלי|אהובה שלי|הכל שלי/i;
@@ -50,7 +94,7 @@ const BREAKUP_ALPHA_FALLBACKS = [
 ];
 
 const BREAKUP_SITUATION_RE =
-  /להפרד|נפרד|לא מתאים|זה לא עובד|לא עובד לי|אני רוצה לעזוב|רוצה לעזוב|נגמר לנו|לא רוצה יותר|ביטול|נפרדים|פרידה|נפרדת|לא מרגישה|לא מרגיש|לא אוהבת|לא אוהב/i;
+  /להפרד|להיפרד|נפרד|ניפרד|שניפרד|נפרדים|נפרדת|נפרדנו|פרידה|לא מתאים|זה לא עובד|לא עובד לי|אני רוצה לעזוב|רוצה לעזוב|נגמר לנו|לא רוצה יותר|ביטול|לא מרגישה|לא מרגיש|לא אוהבת|לא אוהב/i;
 
 const WEAK_BREAKUP_ALPHA_RE =
   /למה|בבקשה|מה עשיתי|תדברי|תסבירי|אל תעזבי|תחכי|אל תלכי|בואי נדבר|אני מצטער|סליחה|תני הזדמנות/i;
@@ -81,11 +125,13 @@ ${stageText}
 
 תענה ב-4 הוויבים האנושיים האלה (אם זו לא פרידה, התעלם מחוק החירום):
 
-1. "alpha" (אלפא): הגבר היציב, האדיש והבטוח בעצמו.
-   - כלל: קצר במיוחד (2-7 מילים).
-   - חוק רגשות רגיל: בשאלות צומי ("אוהב אותי?"), מתחמק ועוקץ. ("תלוי כמה חפרת", "חיה בסרט").
-   - חוק מטלות/אוכל: אם שאלה על בישול/עשית בשבילה — הפוך עליה, היא האישה בבית.
-   - חוק פרידה: חותך קר, בוגר ואדיש.
+1. "alpha" (אלפא): סמכות מוחלטת, גבולות, ערך גבוה — לא פלרטוט ולא ולידציה.
+   - עברית מושלמת כמו ישראלי 26. בלי טעויות כתיב או ניסוח רובוטי.
+   - 2-8 מילים בלבד. push-pull. אדיש. מוביל.
+   - אסור: שמח ש..., איזה כיף, מתוקה שלי בבדיקות, התנצלות, הסברים ארוכים.
+   - רגשות/בדיקות: עקיצה ("תלוי כמה חפרת", "חיה בסרט").
+   - מטלות/בישול: הפוך עליה ("הפוך ילדה תבשלי").
+   - פרידה: חותך מיד ("סגור בהצלחה", "קיבלתי ביי").
 
 2. "beta" (בטא): הגבר שמשקיע יותר מדי.
    - מתאמץ, מסביר את עצמו בהגזמה, נלחץ מכל שינוי קטן, משתמש באימוג'יז (😅, ❤️, 🙏).
@@ -122,11 +168,19 @@ function trimAlphaWords(text, maxWords = ALPHA_MAX_WORDS) {
 function sanitizeResponseText(text) {
   if (!text || typeof text !== 'string') return '';
   let t = text.trim();
+  /**
+   * Strip AI-formal Hebrew (these break the Tactician voice).
+   * NOTE: "מעניין" is intentionally NOT stripped — the Tactician uses it
+   * ("יש בך משהו מסקרן/מעניין" is a valid tactical observation).
+   */
   const replacements = [
     [/אשמח/gi, ''],
-    [/מעניין/gi, ''],
     [/סורי/gi, ''],
-    [/בוודאי/gi, 'ברור']
+    [/בוודאי/gi, 'ברור'],
+    [/מדוע/gi, 'למה'],
+    [/היכן/gi, 'איפה'],
+    [/ניתן/gi, ''],
+    [/תוכניותיך/gi, '']
   ];
   for (const [re, rep] of replacements) t = t.replace(re, rep);
   return t.replace(/\s{2,}/g, ' ').trim();
@@ -163,9 +217,23 @@ function extractAnalyzePayload(raw) {
   return { responses, score, feedback };
 }
 
-const FORBIDDEN_ALPHA_RE = /תוכניותיך|ניתן|מעניין|יפהפייה|בוודאי|אשמח|מדוע/i;
+/**
+ * AI-formal politeness and direct fawning praise (still forbidden for Tactician).
+ * "מעניין" is REMOVED — Tactician uses it observationally.
+ */
+const FORBIDDEN_ALPHA_RE =
+  /תוכניותיך|ניתן|יפהפייה|בוודאי|אשמח|מדוע|היכן|באמת כל כך|מהמם|מדהימ/i;
 
-const ROBOTIC_VALIDATION_ALPHA_RE = /^(כן|לא|ברור|בטח|כמובן|בוודאי)(\s|$)|^אוהב אותך$|^כן אוהב/i;
+/**
+ * Raw needy validation / direct fawning that breaks Tactician frame.
+ * Tactician IS allowed observational/conditional compliments
+ * ("יש בך משהו...", "וייב מסקרן", "נראה אם...") — those are NOT caught here.
+ */
+const WEAK_FLIRT_ALPHA_RE =
+  /שמח ש|נחמד ש|איזה כיף|כיף לי|את מדהימ|את מהממ|יפה שלך|איזה יופי|מתוקה שלי(?! .*נראה| .*תוכיחי)|חמודה שלי|אוהב אותך|מתגעגע אלייך|בא לי אותך|אני צריך אותך|אני אוהב את|מתחנן/i;
+
+const ROBOTIC_VALIDATION_ALPHA_RE =
+  /^(כן|לא|ברור|בטח|כמובן|בוודאי)(\s|$)|^אוהב אותך$|^כן אוהב|שמח ש|נחמד ש/i;
 
 const DOMESTIC_SITUATION_RE =
   /הכנת|בישלת|בישלתי|עשית בשביל|לעשות לי|הכנת לי|בישול|אוכל מוכן|ארוחה|לארוחה|תבשל|תכין לי|עשית לי|לנקות|כביסה/i;
@@ -182,6 +250,7 @@ function detectSituationKind(situation) {
   if (/אוהב אותי|אוהבת אותי|מתגעגע|געגוע|חסר לי|געגעת לי/i.test(s)) return 'validation';
   if (/מוקדם|מספר|נשאר.*פה|נדבר פה/i.test(s)) return 'hesitation';
   if (/מעצבן|מעצבנת|מעצבן אותי/i.test(s)) return 'complaint';
+  if (/חייב|תבוא|תגיע|תעשה לי|עכשיו אתה|מיד אתה/i.test(s)) return 'demand';
   if (/פנוי|פנויה|פנויות|ערב/i.test(s)) return 'green_light';
   if (/חושב.*(יכול|תצליח)/i.test(s)) return 'frame_test';
   if (/^חחח|רק חחח/i.test(s)) return 'dry_laugh';
@@ -209,8 +278,14 @@ function enforceAlphaRules(situation, responses, relationshipStage) {
 
   const wordCount = alpha.split(/\s+/).filter(Boolean).length;
   const tooLong = wordCount > ALPHA_MAX_WORDS;
+  /**
+   * Breakup cold-cuts are intentionally short ("סגור בהצלחה" = 2 words),
+   * so we don't enforce the 3-word minimum on breakup.
+   */
+  const tooShort = kind !== 'breakup' && wordCount < ALPHA_MIN_WORDS;
   const hasPeriod = /\.\s*$/.test(String(responses.alpha || '').trim());
-  const apologizes = /סורי|מצטער|סליחה/i.test(alpha);
+  const apologizes = /סורי|מצטער|מתנצל|סליחה/i.test(alpha);
+  const weakFlirt = WEAK_FLIRT_ALPHA_RE.test(alpha);
   const heavyNickname = HEAVY_NICKNAME_RE.test(alpha);
   const stageBlocksNickname = (stage === 'beginning' || stage === 'middle') && heavyNickname;
   const roboticValidation =
@@ -234,20 +309,24 @@ function enforceAlphaRules(situation, responses, relationshipStage) {
       ],
     validation: pickValidationFallback(stage),
     domestic: pickDomesticFallback(stage),
-    hesitation: 'פחות מקלדת יאללה',
-    complaint: 'תתמודדי',
-    small_talk: 'עמוס סיימתי אימון',
-    green_light: 'סגור אוסף אותך',
-    frame_test: 'ברור נראה',
-    dry_laugh: 'זה לא תשובה',
-    general: 'סבבה'
+    hesitation: 'פחות מקלדת, יאללה תרגיעי',
+    complaint: 'תרגעי קצת, ננתח אחר כך',
+    demand: 'לא ככה זה עובד פה',
+    small_talk: 'יום עמוס, נדבר בערב',
+    green_light: 'סגור, אוסף אותך בערב',
+    frame_test: 'לא חושב, יודע — תבחני',
+    dry_laugh: 'נחנקת שם או שיש לך משהו',
+    general: 'יש בך משהו, נראה לאן זה הולך'
   };
 
   if (
     !alpha ||
     tooLong ||
+    tooShort ||
     hasPeriod ||
-    (apologizes && kind === 'complaint') ||
+    weakFlirt ||
+    FORBIDDEN_ALPHA_RE.test(alpha) ||
+    (apologizes && kind !== 'breakup') ||
     roboticValidation ||
     weakDomestic ||
     weakBreakup ||
@@ -266,6 +345,7 @@ function responsesLookRobotic(responses) {
   if (words > ALPHA_MAX_WORDS) return true;
   if (/\.$/.test(a.trim())) return true;
   if (FORBIDDEN_ALPHA_RE.test(a)) return true;
+  if (WEAK_FLIRT_ALPHA_RE.test(a)) return true;
   if (ROBOTIC_VALIDATION_ALPHA_RE.test(a)) return true;
   if (/^היי יפה|מאמן|ארכיטיפ/i.test(a)) return true;
   return false;
@@ -288,7 +368,9 @@ Return ONLY JSON:
 module.exports = {
   CHANNEL_CTX,
   STAGE_CTX,
+  ALPHA_ARCHETYPE_BLOCK,
   ALPHA_MAX_WORDS,
+  ALPHA_MIN_WORDS,
   ANALYZE_SYSTEM,
   normalizeRelationshipStage,
   buildAnalyzePrompt,

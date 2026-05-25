@@ -172,14 +172,11 @@
     root.innerHTML =
       '<div class="section-eyebrow">4 Archetypes</div><h2 class="section-title">מנוע התשובות</h2>' +
       '<p class="section-desc">תאר סיטואציה — 4 ארכיטיפים קשיחים.</p>' +
-      '<div class="ch-grid ch-grid--two" id="scenarioChGrid">' +
-      '<button type="button" class="ch-btn active" data-ch="app"><span class="nm">אפליקציה</span></button>' +
-      '<button type="button" class="ch-btn" data-ch="whatsapp"><span class="nm">וואטסאפ</span></button></div>' +
       '<div class="tags-row" id="scenarioTags"></div>' +
       '<div class="rel-stage-row" id="scenarioRelStageRow" role="group" aria-label="שלב קשר">' +
-      '<button type="button" class="rel-stage-chip active" data-stage="start">🧊 התחלה</button>' +
-      '<button type="button" class="rel-stage-chip" data-stage="middle">🔥 אמצע</button>' +
-      '<button type="button" class="rel-stage-chip" data-stage="deep">💍 עמוק</button></div>' +
+      '<button type="button" class="rel-stage-chip active" data-stage="start">🧊 קשר בהתחלה (חודש)</button>' +
+      '<button type="button" class="rel-stage-chip" data-stage="middle">🔥 קשר אמצע (1-4)</button>' +
+      '<button type="button" class="rel-stage-chip" data-stage="deep">💍 קשר רציני (4+)</button></div>' +
       '<div class="input-wrap"><textarea class="text-input" id="scenarioInput" rows="2" placeholder="תאר מה קרה..." maxlength="600"></textarea></div>' +
       '<button type="button" class="btn-primary" id="scenarioSubmit">⚡ קבל 4 ארכיטיפים</button>' +
       '<div class="err-banner" id="scenarioErr"></div><div class="psych-scan-host hidden" id="scenarioLoad" aria-live="polite"></div>' +
@@ -240,9 +237,10 @@
       };
     });
 
-    root.querySelectorAll('#scenarioChGrid .ch-btn').forEach(function (btn) {
+    var scenarioChGrid = root.querySelector('#scenarioChGrid');
+    (scenarioChGrid ? scenarioChGrid.querySelectorAll('.ch-btn') : []).forEach(function (btn) {
       btn.onclick = function () {
-        root.querySelectorAll('#scenarioChGrid .ch-btn').forEach(function (b) { b.classList.remove('active'); });
+        scenarioChGrid.querySelectorAll('.ch-btn').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
         curCh = btn.dataset.ch;
         renderPresets('');
@@ -307,64 +305,27 @@
     renderPresets('');
   }
 
-  /* ── Maya Chat Simulator (סימולטור אלפא — pure chat) ── */
-  var DEFAULT_WOMAN_OPENER = 'היי, מה קורה? 😊';
-  var WOMAN_OPENERS = [
-    DEFAULT_WOMAN_OPENER,
-    'חחח פרופיל מעניין. מה נסגר איתך?',
-    'היי. לקח לך זמן לענות 😏'
+  /* ── Alpha Chat Simulator — 3 difficulty levels ── */
+  var SIM_LEVELS = [
+    { id: 'easy', label: 'קל', sub: 'חמה גבוהה · רוצה דייט', persona: 'מאיה', opener: 'היי, מה קורה?', css: 'sim-diff--easy' },
+    { id: 'medium', label: 'בינוני', sub: 'מעורב · בודקת מסגרת', persona: 'ספיר', opener: 'היי, מה קורה?', css: 'sim-diff--medium' },
+    { id: 'hard', label: 'קשה', sub: 'קרה · התנגדות מקסימלית', persona: 'ספיר', opener: 'היי', css: 'sim-diff--hard' }
   ];
 
+  function simLevelCfg(id) {
+    for (var i = 0; i < SIM_LEVELS.length; i++) {
+      if (SIM_LEVELS[i].id === id) return SIM_LEVELS[i];
+    }
+    return SIM_LEVELS[1];
+  }
+
   function initMayaChat(root) {
-    var curCh = 'app', curStage = 'beginning', loading = false;
-    var chatHistory = [], sessionStarted = false;
+    var curCh = 'app', curStage = 'beginning', curDifficulty = null;
+    var loading = false, chatHistory = [], sessionStarted = false;
     var MIN_TURNS = 2;
-
-    root.innerHTML =
-      '<div class="chat-sim">' +
-      '<header class="chat-sim-header"><div class="chat-sim-avatar">מ</div>' +
-      '<div class="chat-sim-meta"><div class="chat-sim-name">מאיה</div><div class="chat-sim-status">מחוברת</div></div></header>' +
-      '<details class="chat-sim-settings"><summary>הגדרות</summary>' +
-      '<div class="stage-grid stage-grid--compact" id="stageGrid">' +
-      '<button type="button" class="ch-btn active" data-stage="beginning"><span class="nm">התחלה</span></button>' +
-      '<button type="button" class="ch-btn" data-stage="middle"><span class="nm">אמצע</span></button>' +
-      '<button type="button" class="ch-btn" data-stage="deep"><span class="nm">קשר עמוק</span><span class="ds">4+ חודשים</span></button></div>' +
-      '<div class="ch-grid ch-grid--two" id="chGrid">' +
-      '<button type="button" class="ch-btn active" data-ch="app"><span class="nm">אפליקציה</span></button>' +
-      '<button type="button" class="ch-btn" data-ch="whatsapp"><span class="nm">וואטסאפ</span></button></div>' +
-      '<button type="button" class="btn-secondary chat-new-btn" id="chatNewBtn">שיחה חדשה</button></details>' +
-      '<div class="chat-thread-wrap"><div class="chat-thread" id="chatThread"></div>' +
-      '<div class="psych-scan-host psych-scan-host--overlay hidden" id="coachPsychLoad" aria-live="polite"></div>' +
-      '<div class="chat-typing hidden" id="chatTyping"><span class="chat-typing-dots"><span></span><span></span><span></span></span>מאיה מקלידה</div></div>' +
-      '<div class="err-banner" id="aiErr"></div>' +
-      '<footer class="chat-footer-bar"><div class="chat-composer"><textarea class="chat-input text-input" id="chatInput" rows="1" placeholder="הודעה..." maxlength="600"></textarea>' +
-      '<button type="button" class="chat-send-btn" id="chatSend">➤</button></div>' +
-      '<button type="button" class="btn-secondary chat-end-bottom" id="chatEndBtn" disabled>סיים וקבל ציון</button></footer></div>' +
-      '<div class="chat-analysis-layer hidden" id="analysisLayer" role="dialog" aria-modal="true" aria-hidden="true">' +
-      '<div class="chat-analysis-overlay" id="analysisOverlay">' +
-      '<div class="coach-modal-panel"><button type="button" class="chat-analysis-close" id="analysisClose" aria-label="סגור">✕</button>' +
-      '<p class="coach-modal-eyebrow">Dating Coach</p>' +
-      '<div class="coach-score-ring-wrap"><div class="coach-score-ring" id="coachScoreRing"><span class="coach-score-num" id="analysisScore">0</span></div></div>' +
-      '<div class="coach-score-label">ציון / 100</div>' +
-      '<p class="coach-analysis-text" id="analysisText"></p>' +
-      '<h4 class="coach-tips-title">טיפים לפעם הבאה</h4>' +
-      '<ul class="coach-tips-list" id="analysisImprovements"></ul>' +
-      '<button type="button" class="btn-primary" id="analysisDone">סגור</button></div></div></div>';
-
-    var chatThread = root.querySelector('#chatThread');
-    var chatInput = root.querySelector('#chatInput');
-    var chatSend = root.querySelector('#chatSend');
-    var chatTyping = root.querySelector('#chatTyping');
-    var chatEndBtn = root.querySelector('#chatEndBtn');
-    var chatNewBtn = root.querySelector('#chatNewBtn');
-    var aiErr = root.querySelector('#aiErr');
-    var analysisLayer = root.querySelector('#analysisLayer');
-    var analysisOverlay = root.querySelector('#analysisOverlay');
-    var coachScoreRing = root.querySelector('#coachScoreRing');
-    var analysisScore = root.querySelector('#analysisScore');
-    var analysisText = root.querySelector('#analysisText');
-    var analysisImprovements = root.querySelector('#analysisImprovements');
-    var coachPsychLoad = root.querySelector('#coachPsychLoad');
+    var chatThread, chatInput, chatSend, chatTyping, chatEndBtn, chatNewBtn, aiErr;
+    var analysisLayer, analysisOverlay, coachScoreRing, analysisScore, analysisText;
+    var analysisImprovements, coachPsychLoad, chatTypingLabel;
 
     function escapeHtml(s) {
       return String(s)
@@ -404,12 +365,13 @@
       requestAnimationFrame(function () { analysisLayer.classList.add('active'); });
     }
 
-    function scrollThread() { chatThread.scrollTop = chatThread.scrollHeight; }
+    function scrollThread() { if (chatThread) chatThread.scrollTop = chatThread.scrollHeight; }
     function updateEnd() {
+      if (!chatEndBtn) return;
       var n = chatHistory.filter(function (m) { return m.role === 'user'; }).length;
       chatEndBtn.disabled = n < MIN_TURNS || loading;
     }
-    function setComposer(on) { chatInput.disabled = !on; chatSend.disabled = !on; }
+    function setComposer(on) { if (chatInput) chatInput.disabled = !on; if (chatSend) chatSend.disabled = !on; }
     function appendBubble(text, who) {
       var row = document.createElement('div');
       row.className = 'chat-row chat-row--' + who;
@@ -421,13 +383,98 @@
       scrollThread();
     }
     function closeAnalysisModal() {
+      if (!analysisLayer) return;
       analysisLayer.classList.remove('active');
       analysisLayer.classList.add('hidden');
       analysisLayer.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('coach-modal-open', 'modal-blur');
       setAnalyzing(false);
     }
+
+    function renderDifficultyPicker() {
+      curDifficulty = null;
+      sessionStarted = false;
+      chatHistory = [];
+      var cards = SIM_LEVELS.map(function (lv) {
+        return '<button type="button" class="sim-diff-card ' + lv.css + '" data-difficulty="' + lv.id + '">' +
+          '<div class="sim-diff-label">' + lv.label + '</div>' +
+          '<div class="sim-diff-sub">' + lv.sub + '</div>' +
+          '<div class="sim-diff-persona">' + lv.persona + '</div></button>';
+      }).join('');
+      root.innerHTML =
+        '<div class="sim-difficulty-screen">' +
+        '<div class="section-eyebrow">סימולטור אלפא</div>' +
+        '<h2 class="section-title">בחר רמת קושי</h2>' +
+        '<p class="section-desc">כל רמה משנה את האישיות, הפתיחה והציון בסוף השיחה</p>' +
+        '<div class="sim-difficulty-grid">' + cards + '</div></div>';
+      root.querySelectorAll('.sim-diff-card').forEach(function (card) {
+        card.onclick = function () { enterChat(card.dataset.difficulty); };
+      });
+    }
+
+    function mountChatUI() {
+      var cfg = simLevelCfg(curDifficulty);
+      var av = cfg.persona.charAt(0);
+      root.innerHTML =
+        '<div class="chat-sim">' +
+        '<header class="chat-sim-header"><div class="chat-sim-avatar">' + av + '</div>' +
+        '<div class="chat-sim-meta"><div class="chat-sim-name">' + cfg.persona + '</div>' +
+        '<div class="chat-sim-status">מחוברת · <span class="sim-diff-badge ' + cfg.css + '">' + cfg.label + '</span></div></div>' +
+        '<button type="button" class="chat-sim-restart" id="chatNewBtn" aria-label="שינוי רמה / שיחה חדשה" title="שינוי רמה / שיחה חדשה">↻</button></header>' +
+        '<div class="chat-thread-wrap"><div class="chat-thread" id="chatThread"></div>' +
+        '<div class="psych-scan-host psych-scan-host--overlay hidden" id="coachPsychLoad" aria-live="polite"></div>' +
+        '<div class="chat-typing hidden" id="chatTyping"><span class="chat-typing-dots"><span></span><span></span><span></span></span>' +
+        '<span id="chatTypingLabel">' + cfg.persona + ' מקלידה</span></div></div>' +
+        '<div class="err-banner" id="aiErr"></div>' +
+        '<footer class="chat-footer-bar"><div class="chat-composer"><textarea class="chat-input text-input" id="chatInput" rows="1" placeholder="הודעה..." maxlength="600"></textarea>' +
+        '<button type="button" class="chat-send-btn" id="chatSend">➤</button></div>' +
+        '<button type="button" class="btn-secondary chat-end-bottom" id="chatEndBtn" disabled>סיים וקבל ציון</button></footer></div>' +
+        '<div class="chat-analysis-layer hidden" id="analysisLayer" role="dialog" aria-modal="true" aria-hidden="true">' +
+        '<div class="chat-analysis-overlay" id="analysisOverlay">' +
+        '<div class="coach-modal-panel"><button type="button" class="chat-analysis-close" id="analysisClose" aria-label="סגור">✕</button>' +
+        '<p class="coach-modal-eyebrow">Dating Coach · ' + cfg.label + '</p>' +
+        '<div class="coach-score-ring-wrap"><div class="coach-score-ring" id="coachScoreRing"><span class="coach-score-num" id="analysisScore">0</span></div></div>' +
+        '<div class="coach-score-label">ציון / 100</div>' +
+        '<p class="coach-analysis-text" id="analysisText"></p>' +
+        '<h4 class="coach-tips-title">טיפים לפעם הבאה</h4>' +
+        '<ul class="coach-tips-list" id="analysisImprovements"></ul>' +
+        '<button type="button" class="btn-primary" id="analysisDone">סגור</button></div></div></div>';
+
+      chatThread = root.querySelector('#chatThread');
+      chatInput = root.querySelector('#chatInput');
+      chatSend = root.querySelector('#chatSend');
+      chatTyping = root.querySelector('#chatTyping');
+      chatTypingLabel = root.querySelector('#chatTypingLabel');
+      chatEndBtn = root.querySelector('#chatEndBtn');
+      chatNewBtn = root.querySelector('#chatNewBtn');
+      aiErr = root.querySelector('#aiErr');
+      analysisLayer = root.querySelector('#analysisLayer');
+      analysisOverlay = root.querySelector('#analysisOverlay');
+      coachScoreRing = root.querySelector('#coachScoreRing');
+      analysisScore = root.querySelector('#analysisScore');
+      analysisText = root.querySelector('#analysisText');
+      analysisImprovements = root.querySelector('#analysisImprovements');
+      coachPsychLoad = root.querySelector('#coachPsychLoad');
+
+      chatSend.onclick = sendMsg;
+      chatInput.onkeydown = function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } };
+      chatEndBtn.onclick = endAnalyze;
+      chatNewBtn.onclick = renderDifficultyPicker;
+      root.querySelector('#analysisClose').onclick = closeAnalysisModal;
+      root.querySelector('#analysisDone').onclick = closeAnalysisModal;
+      analysisOverlay.onclick = function (e) {
+        if (e.target === analysisOverlay) closeAnalysisModal();
+      };
+    }
+
+    function enterChat(difficulty) {
+      curDifficulty = difficulty;
+      mountChatUI();
+      startNew();
+    }
+
     function startNew() {
+      var cfg = simLevelCfg(curDifficulty);
       setAnalyzing(false);
       chatHistory = [];
       sessionStarted = false;
@@ -435,8 +482,7 @@
       aiErr.classList.remove('show');
       closeAnalysisModal();
       setComposer(true);
-      root.querySelectorAll('#stageGrid .ch-btn, #chGrid .ch-btn').forEach(function (b) { b.disabled = false; });
-      var op = DEFAULT_WOMAN_OPENER;
+      var op = cfg.opener;
       chatHistory.push({ role: 'assistant', content: op });
       appendBubble(op, 'her');
       updateEnd();
@@ -449,7 +495,6 @@
       setAnalyzing(false);
       aiErr.classList.remove('show');
       sessionStarted = true;
-      root.querySelectorAll('#stageGrid .ch-btn, #chGrid .ch-btn').forEach(function (b) { b.disabled = true; });
       chatInput.value = '';
       appendBubble(msg, 'you');
       chatHistory.push({ role: 'user', content: msg });
@@ -462,7 +507,13 @@
         var res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ situation: msg, chatHistory: chatHistory })
+          body: JSON.stringify({
+            situation: msg,
+            chatHistory: chatHistory,
+            difficulty: curDifficulty,
+            channel: curCh,
+            relationshipStage: curStage
+          })
         });
         var payload = {};
         try {
@@ -507,7 +558,9 @@
       try {
         var data = await postJson('/api/feedback', {
           chatHistory: chatHistory,
-          relationshipStage: curStage
+          relationshipStage: curStage,
+          difficulty: curDifficulty,
+          channel: curCh
         });
         showCoachModal(data);
       } catch (e) {
@@ -522,33 +575,8 @@
       updateEnd();
     }
 
-    root.querySelectorAll('#stageGrid .ch-btn').forEach(function (btn) {
-      btn.onclick = function () {
-        if (sessionStarted) return;
-        root.querySelectorAll('#stageGrid .ch-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        curStage = btn.dataset.stage;
-      };
-    });
-    root.querySelectorAll('#chGrid .ch-btn').forEach(function (btn) {
-      btn.onclick = function () {
-        if (sessionStarted) return;
-        root.querySelectorAll('#chGrid .ch-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        curCh = btn.dataset.ch;
-      };
-    });
-    chatSend.onclick = sendMsg;
-    chatInput.onkeydown = function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } };
-    chatEndBtn.onclick = endAnalyze;
-    chatNewBtn.onclick = startNew;
-    root.querySelector('#analysisClose').onclick = closeAnalysisModal;
-    root.querySelector('#analysisDone').onclick = closeAnalysisModal;
-    analysisOverlay.onclick = function (e) {
-      if (e.target === analysisOverlay) closeAnalysisModal();
-    };
     setAnalyzing(false);
-    startNew();
+    renderDifficultyPicker();
   }
 
   /* ── VIP Guides ── */
