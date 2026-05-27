@@ -112,7 +112,29 @@
     { id: 's', title: 'איך לא לגמור מהר', sub: 'Edging ונשימה', body: '<h4>פיזי</h4><ul><li>Edging 3-4 מחזורים</li><li>Reverse Kegels + נשיפה</li></ul>' }
   ];
 
+  /**
+   * Firebase credit gate — every AI-consuming endpoint must pass this first.
+   * Calls window.AUTH.gateApiCall() → deductCredit(uid) in auth.js.
+   *
+   * Custom paid buttons:
+   *   await window.AUTH.withCredit(function () { ... your action ... });
+   * Or manually:
+   *   var ok = await window.AUTH.deductCredit(window.AUTH.currentUser().uid);
+   */
+  async function aiFetchGate() {
+    if (!window.AUTH || typeof window.AUTH.gateApiCall !== 'function') {
+      console.warn('[gate] window.AUTH missing — Firebase not initialized; request continues unblocked');
+      return true;
+    }
+    return window.AUTH.gateApiCall();
+  }
+
+  function isAuthGateError(err) {
+    return !!err && (err.name === 'AuthGateError' || err.constructor?.name === 'AuthGateError');
+  }
+
   async function postJson(url, body) {
+    await aiFetchGate();
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -290,9 +312,11 @@
           resultsEl.appendChild(card);
         });
       } catch (e) {
-        console.error('[scenario] request failed', e);
-        errEl.textContent = '⚠️ ' + (e.message || e);
-        errEl.classList.add('show');
+        if (!isAuthGateError(e)) {
+          console.error('[scenario] request failed', e);
+          errEl.textContent = '⚠️ ' + (e.message || e);
+          errEl.classList.add('show');
+        }
       } finally {
         btnPsychStop(submitBtn);
         loading = false;
@@ -492,6 +516,12 @@
       if (isAnalyzing) return;
       var msg = chatInput.value.trim();
       if (!msg || loading) return;
+      try {
+        await aiFetchGate();
+      } catch (gateErr) {
+        if (isAuthGateError(gateErr)) return;
+        throw gateErr;
+      }
       setAnalyzing(false);
       aiErr.classList.remove('show');
       sessionStarted = true;
@@ -537,9 +567,11 @@
           chatHistory.push({ role: 'assistant', content: reply });
         }
       } catch (e) {
-        console.error('[chat] request failed', e);
-        aiErr.textContent = '⚠️ ' + (e.message || e);
-        aiErr.classList.add('show');
+        if (!isAuthGateError(e)) {
+          console.error('[chat] request failed', e);
+          aiErr.textContent = '⚠️ ' + (e.message || e);
+          aiErr.classList.add('show');
+        }
       }
       chatTyping.classList.add('hidden');
       loading = false;
@@ -564,8 +596,10 @@
         });
         showCoachModal(data);
       } catch (e) {
-        aiErr.textContent = '⚠️ ' + (e.message || e);
-        aiErr.classList.add('show');
+        if (!isAuthGateError(e)) {
+          aiErr.textContent = '⚠️ ' + (e.message || e);
+          aiErr.classList.add('show');
+        }
         closeAnalysisModal();
       }
       psychStop(coachPsychLoad);

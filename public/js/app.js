@@ -37,6 +37,17 @@ function initModules() {
   initVipGuides(document.getElementById('mount-vip'));
 }
 
+/**
+ * Paid action example (uses auth.js deductCredit via gateApiCall):
+ *
+ *   document.getElementById('actionBtn').addEventListener('click', async () => {
+ *     const ok = await window.AUTH?.withCredit(() => {
+ *       // run the paid feature here
+ *     });
+ *     if (!ok) return; // paywall or login already shown by AUTH
+ *   });
+ */
+
 export async function initApp() {
   if (!document.getElementById('mount-analyze')) {
     throw new Error('DOM לא נטען — חסר #mount-analyze');

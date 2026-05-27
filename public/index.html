@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Heebo:wght@300;400;500;700&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=133">
+  <link rel="stylesheet" href="/css/styles.css?v=138">
   <style>
     /* ═══ Dark Script · Pro-Max Design System ═══
        OLED + Liquid Glass + 3D Hyperrealism */
@@ -469,15 +469,48 @@
     .nav-icon { font-size: 20px; line-height: 1; }
   </style>
 </head>
-<body>
+<body class="auth-pending">
   <div id="boot-error" class="boot-error hidden" role="alert"></div>
   <div class="aurora-bg" aria-hidden="true"></div>
   <div class="noise-overlay" aria-hidden="true"></div>
 
-  <div class="app-shell">
+  <!-- Auth guard: full-screen login when Firebase is configured and user is signed out -->
+  <section id="auth-gate" class="auth-gate hidden" aria-label="התחברות ל-Dark Script">
+    <div class="auth-gate__panel auth-modal__panel">
+      <div class="auth-modal__brand">DARK <span>SCRIPT</span></div>
+      <p class="auth-gate__tagline">התחבר כדי לגשת לכלים</p>
+      <div class="auth-modal__tabs" role="tablist">
+        <button type="button" class="auth-tab active" data-tab="login" role="tab">התחברות</button>
+        <button type="button" class="auth-tab" data-tab="register" role="tab">הרשמה</button>
+      </div>
+      <form class="auth-form" id="authGateForm" novalidate>
+        <label class="auth-field">
+          <span class="auth-field__label">אימייל</span>
+          <input type="email" name="email" autocomplete="email" required placeholder="you@email.com" />
+        </label>
+        <label class="auth-field">
+          <span class="auth-field__label">סיסמה</span>
+          <input type="password" name="password" autocomplete="current-password" required minlength="6" placeholder="לפחות 6 תווים" />
+        </label>
+        <div class="auth-error hidden" id="authGateError"></div>
+        <button type="submit" class="auth-submit" id="authGateSubmit">התחבר</button>
+        <p class="auth-helper" id="authGateHelper">משתמש חדש?
+          <button type="button" class="auth-link" data-tab="register">צור חשבון</button>
+        </p>
+      </form>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell hidden">
     <header class="top-bar">
       <div class="brand-mini">DARK <span>SCRIPT</span></div>
-      <span class="vip-pill">👑 VIP</span>
+      <div class="top-bar__actions">
+        <button type="button" id="logoutBtn" class="logout-btn" aria-label="התנתק">התנתק</button>
+        <button type="button" id="creditCounter" class="credit-counter credit-counter--anon"
+                aria-label="קרדיטים" data-state="anon">
+          <span class="cc-icon">🪙</span><span class="cc-text">…</span>
+        </button>
+      </div>
     </header>
 
     <main>
@@ -521,6 +554,7 @@
   <script src="/js/data/truth-dare-decks.js" defer></script>
   <script src="/js/truth-or-dare-game.js" defer></script>
   <script src="/js/psych-loader.js?v=129"></script>
-  <script src="/app.bundle.js?v=133" defer></script>
+  <script type="module" src="/js/auth.js?v=9"></script>
+  <script src="/app.bundle.js?v=135" defer></script>
 </body>
 </html>
