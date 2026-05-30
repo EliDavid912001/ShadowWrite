@@ -2,15 +2,22 @@
  * 4 Answers — POST /api/generate-script & /api/scenario (Google Gemini)
  *
  * System persona: elite social-dynamics / behaviorism expert (see promptManager SCENARIO_PROMPT).
- * Weak input → Meta-Commentary in Alpha + full archetype set (never reject).
+ * Weak input → Meta-Commentary in Alpha TIP + full archetype set (never reject).
+ * Alpha format: MOVE — TIP (high-value line + short coaching).
+ *
+ * Simulator session scoring (POST /api/feedback): coach-engine.js + lib/hard-grading.js
  */
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const {
   CHANNEL_CTX,
+  ALPHA_MAX_WORDS,
+  ALPHA_TIP_SEP,
+  alphaMissingHighValueTip,
   enforceAlphaRules,
   responsesLookRobotic,
   sanitizeResponses,
-  trimAlphaWords
+  trimAlphaWords,
+  stripTrailingPeriods
 } = require('./prompts/archetypes');
 const {
   buildScenarioSystemPrompt,
@@ -19,11 +26,11 @@ const {
 } = require('./promptManager');
 
 /**
- * Tactician spec: alpha 3-10 words, witty 3-10 (single emoji allowed),
- * friendly 6-15 (full sentence + emoji), beta 6-15 (submissive emojis).
+ * Alpha: MOVE (3-12) + TIP (4-14) separated by " — ", max ~26 words total.
+ * Witty 3-10, friendly/beta 6-15.
  */
 const ARCHETYPE_WORD_LIMITS = {
-  alpha: { max: 10, emojis: false },
+  alpha: { max: ALPHA_MAX_WORDS, emojis: false },
   witty: { max: 10, emojis: true },
   beta: { max: 15, emojis: true },
   friendly: { max: 15, emojis: true }
@@ -74,19 +81,80 @@ function extractJsonFieldsLoose(raw) {
   return out;
 }
 
-/** Male imperative לך → female לכי (\\b does not work for Hebrew in JS) */
-function fixLechToLachi(text) {
-  return String(text ?? '').replace(/(^|[\s"':,{])לך([\s"'.!?,}\]]|$)/g, '$1לכי$2');
-}
-
 /** Fix known AI Hebrew bugs on raw JSON string before parse */
 function cleanGroqHebrewBeforeParse(aiResponse) {
   let cleanResponse = String(aiResponse ?? '');
-  cleanResponse = cleanResponse.replace(/להזיע\s+לך/gi, 'לעזור לכי');
-  cleanResponse = cleanResponse.replace(/להזיע\s+לכי/gi, 'לעזור לכי');
+  cleanResponse = cleanResponse.replace(/להזיע\s+לך/gi, 'לעזור לך');
+  cleanResponse = cleanResponse.replace(/להזיע\s+לכי/gi, 'לעזור לך');
   cleanResponse = cleanResponse.replace(/להזיע/gi, 'לעזור');
-  cleanResponse = fixLechToLachi(cleanResponse);
   return cleanResponse;
+}
+
+/**
+ * Alpha grammar: dative לך (not לכי); tips to the user use masculine imperatives.
+ */
+function fixAlphaHebrewGrammar(text) {
+  let t = String(text ?? '').trim();
+  if (!t) return t;
+
+  t = t
+    .replace(/מתאים\s+לכי/gi, 'מתאים לך')
+    .replace(/שווה\s+לכי/gi, 'שווה לך')
+    .replace(/(^|[\s,(])(ב|ל|אל|עם|אצל)\s*לכי([\s,.!?—]|$)/g, '$1$2 לך$3')
+    .replace(/\s\|\s/g, ALPHA_TIP_SEP);
+
+  const parts = t.split(ALPHA_TIP_SEP);
+  if (parts.length >= 2) {
+    parts[0] = parts[0].trim();
+    parts[1] = parts[1]
+      .replace(/תגידי/g, 'תגיד')
+      .replace(/תשלחי/g, 'תשלח')
+      .replace(/תישארי/g, 'תישאר')
+      .replace(/תשמרי/g, 'תשמור')
+      .replace(/תנסי/g, 'תנסה')
+      .trim();
+    t = `${parts[0]}${ALPHA_TIP_SEP}${parts.slice(1).join(ALPHA_TIP_SEP)}`;
+  }
+
+  return t.replace(/\s{2,}/g, ' ').trim();
+}
+
+const DEFAULT_ALPHA_TIPS = {
+  breakup: 'אל תמשיך לדבר, תישאר אדיש',
+  validation: 'משפט זה יוצר מתח. תגיד בביטחון',
+  frame_test: 'משפט זה יוצר מתח. תגיד בביטחון',
+  domestic: 'שומר על מסגרת. תגיד בלי להתנצל',
+  demand: 'גבול ברור. תשלח ותשתוק',
+  dry_laugh: 'עקיצה קלה. תשלח בלי להסביר',
+  general: 'תגיד בקצב רגוע, בלי להסביר'
+};
+
+function defaultAlphaTipForMove(move) {
+  const m = String(move || '').toLowerCase();
+  if (/סגור|ביי|קיבלתי|בהצלחה/.test(m)) return DEFAULT_ALPHA_TIPS.breakup;
+  if (/לא חושב|יודע|תבחני/.test(m)) return DEFAULT_ALPHA_TIPS.frame_test;
+  if (/הפוך|תכיני|תבשלי/.test(m)) return DEFAULT_ALPHA_TIPS.domestic;
+  if (/לא ככה|עובד פה/.test(m)) return DEFAULT_ALPHA_TIPS.demand;
+  return DEFAULT_ALPHA_TIPS.general;
+}
+
+/** Ensures Alpha is MOVE — TIP unless ultra-short breakup cut */
+function ensureAlphaHighValueFormat(alpha) {
+  let a = stripTrailingPeriods(fixAlphaHebrewGrammar(alpha));
+  if (!a) return a;
+
+  if (!alphaMissingHighValueTip(a)) {
+    return trimAlphaWords(a, ALPHA_MAX_WORDS);
+  }
+
+  const move = a.trim();
+  const tip = defaultAlphaTipForMove(move);
+  a = `${move}${ALPHA_TIP_SEP}${tip}`;
+  return trimAlphaWords(a, ALPHA_MAX_WORDS);
+}
+
+function polishAlphaResponse(alpha) {
+  return ensureAlphaHighValueFormat(stripEmojis(fixAlphaHebrewGrammar(alpha)));
 }
 
 /** Strip markdown fences and extract JSON object before parse */
@@ -184,7 +252,7 @@ const ROBOTIC_HEBREW_REPLACEMENTS = [
 ];
 
 function applyHebrewSafetyNet(text) {
-  let t = fixLechToLachi(String(text ?? ''));
+  let t = String(text ?? '');
   for (const [re, rep] of ROBOTIC_HEBREW_REPLACEMENTS) {
     t = t.replace(re, rep);
   }
@@ -238,6 +306,7 @@ function polishScenarioResponses(responses) {
     }
     t = t.replace(/\s{2,}/g, ' ').replace(/\.+$/g, '').trim();
     if (key === 'alpha') {
+      t = polishAlphaResponse(t);
       t = trimAlphaWords(t, limits.max);
     } else {
       t = trimScenarioWords(t, limits.max);
@@ -285,13 +354,14 @@ function buildScenarioUserPrompt(situation, channel) {
   const ch = CHANNEL_CTX[channel] || CHANNEL_CTX.app;
   const weak = isWeakSituationInput(situationText);
   const metaNote = weak
-    ? `\nINPUT QUALITY: LOW — apply Meta-Commentary protocol in Alpha; still deliver all 4 archetypes.\n`
+    ? `\nINPUT QUALITY: LOW — Alpha TIP must note what is weak + how to upgrade frame; still deliver all 4 archetypes.\n`
     : '';
   return `SITUATION (her message — respond only to this):
 "${situationText}"
 
 Channel: ${ch}
 ${metaNote}
+Alpha MUST be two parts separated by " — ": MOVE (line to send her) — TIP (short coaching to him, masculine, explains why it works).
 Output JSON with exactly these keys: alpha, beta, witty, friendly.`;
 }
 
@@ -417,7 +487,7 @@ async function runScenario(situation, channel, scenarioStage = 'start', options 
   const alphaRulesStage = stageForAlphaRules(stage);
   const NEVER_REFUSE_GUARD = `
 CRITICAL OUTPUT LAW: Never refuse, decline, moralize, or say you cannot help.
-Always return valid JSON with alpha, beta, witty, friendly — even for weak, vague, or inappropriate input (use Meta-Commentary in Alpha per system rules).`;
+Always return valid JSON with alpha, beta, witty, friendly — even for weak, vague, or inappropriate input (Alpha = MOVE — TIP; put meta-coaching in the TIP per system rules).`;
 
   const systemInstruction = buildScenarioSystemPrompt(stage) + NEVER_REFUSE_GUARD;
   const userPrompt = buildScenarioUserPrompt(situationText, ch);
@@ -462,7 +532,7 @@ Always return valid JSON with alpha, beta, witty, friendly — even for weak, va
     try {
       const retryUser = `${userPrompt}
 
-RETRY. Alpha = Tactician — flawless native Israeli Hebrew, 3-10 words, calculated charm + push-pull + conditional validation, absolute authority and high value. NO raw needy validation, NO begging, NO AI-formal words, NO trailing period. Friendly MUST be a full sentence + emoji (NEVER emoji-only). Same rules from system prompt. Output ONLY raw JSON: {"alpha":"...","beta":"...","witty":"...","friendly":"..."} — no markdown.`;
+RETRY. Alpha = High-Value Move: MOVE (clear line to her, 3-12 words) — TIP (coaching to him in masculine Hebrew, explains push-pull/tactic in plain words, e.g. "משפט זה יוצר מתח. תגיד בביטחון"). Perfect grammar: לך not לכי for "to you". Up to 26 words total. NO needy validation, NO AI-formal words, NO trailing period. Friendly = full sentence + emoji. Output ONLY raw JSON — no markdown.`;
       const retryRaw = await geminiScenarioComplete(systemInstruction, retryUser, 0.42);
       parsed = safeParseScenarioJson(retryRaw);
       responses = polishScenarioResponses(sanitizeResponses(responsesFromParsed(parsed)));
@@ -481,7 +551,7 @@ RETRY. Alpha = Tactician — flawless native Israeli Hebrew, 3-10 words, calcula
   }
 
   return {
-    alpha: responses.alpha || 'סבבה',
+    alpha: responses.alpha || `סבבה${ALPHA_TIP_SEP}תגיד בקצב רגוע, בלי להסביר`,
     beta: responses.beta || 'אוקיי מבין',
     witty: responses.witty || 'חחח נראה',
     friendly: responses.friendly || 'בכיף'
@@ -509,7 +579,9 @@ module.exports = {
   safeParseScenarioJson,
   safeParseGroqJson: safeParseScenarioJson,
   cleanGroqHebrewBeforeParse,
-  fixLechToLachi,
+  fixAlphaHebrewGrammar,
+  polishAlphaResponse,
+  ensureAlphaHighValueFormat,
   formatScenarioError,
   formatGroqError: formatScenarioError,
   geminiScenarioComplete,

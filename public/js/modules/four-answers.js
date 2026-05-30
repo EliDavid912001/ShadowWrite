@@ -1,4 +1,5 @@
 import { postJson } from '../api.js';
+import { wireCopyButton, showUiHint, showUiError, hideUiMessage } from '../ui-helpers.js';
 function startButtonPsychLoader(btn, opts) {
   if (window.PSYCH_LOADER && window.PSYCH_LOADER.startButton) {
     return window.PSYCH_LOADER.startButton(btn, opts);
@@ -82,7 +83,7 @@ export function initFourAnswers(container) {
     </div>
 
     <button type="button" class="btn-primary" id="scenarioSubmit">⚡ קבל 4 ארכיטיפים</button>
-    <div class="err-banner" id="scenarioErr"></div>
+    <div id="scenarioErr" class="ui-hint-banner" role="status" aria-live="polite"></div>
     <div class="psych-scan-host hidden" id="scenarioLoad" aria-live="polite"></div>
     <div class="persona-grid hidden" id="scenarioResults"></div>
 
@@ -168,32 +169,34 @@ export function initFourAnswers(container) {
     ['alpha', 'beta', 'witty', 'friendly'].forEach((key, i) => {
       const p = PERSONAS[key];
       const txt = responses[key] || '—';
+      const isAlpha = key === 'alpha';
       const card = document.createElement('div');
-      card.className = `persona-card ${key} show`;
+      card.className = `persona-card ${key} show${isAlpha ? ' alpha-card' : ''}`;
       card.style.animationDelay = `${i * 0.06}s`;
       card.innerHTML = `
         <div class="persona-head">
           <span class="persona-tag">${p.label}</span>
-          <span class="persona-sub">${p.sub}</span>
+          ${isAlpha ? '<span class="alpha-card__badge">טיפ מומחה</span>' : `<span class="persona-sub">${p.sub}</span>`}
         </div>
         <div class="persona-body">${escapeHtml(txt)}</div>
         <div class="persona-foot">
-          <button type="button" class="copy-btn">העתק</button>
+          <button type="button" class="copy-btn"></button>
         </div>`;
-      card.querySelector('.copy-btn').addEventListener('click', function () {
-        navigator.clipboard.writeText(txt);
-        this.textContent = 'הועתק ✓';
-      });
+      wireCopyButton(card.querySelector('.copy-btn'), txt);
       resultsEl.appendChild(card);
     });
   }
 
   async function onSubmit() {
     const situation = input.value.trim();
-    if (!situation || loading) return;
+    if (loading) return;
+    if (!situation) {
+      showUiHint(errEl, 'תאר סיטואציה לפני שליחה');
+      return;
+    }
 
     loading = true;
-    errEl.classList.remove('show');
+    hideUiMessage(errEl);
     resultsEl.classList.add('hidden');
     loadEl.classList.add('hidden');
     startButtonPsychLoader(submitBtn);
@@ -213,8 +216,7 @@ export function initFourAnswers(container) {
       showResults(responses);
     } catch (err) {
       console.error('[scenario] request failed', err);
-      errEl.textContent = '⚠️ ' + (err.message || 'שגיאה');
-      errEl.classList.add('show');
+      showUiError(errEl, err.message || 'שגיאה');
     } finally {
       stopButtonPsychLoader(submitBtn);
       loading = false;

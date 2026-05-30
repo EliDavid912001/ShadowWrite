@@ -7,6 +7,10 @@ const {
   buildCoachUserPrompt: buildCoachUserPromptWithDifficulty,
   normalizeDifficulty
 } = require('./sim-difficulty');
+const {
+  applyHardScoreCaps,
+  buildHardGradingPromptBlock
+} = require('./lib/hard-grading');
 
 const COACH_MODEL = (process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim();
 const COACH_FALLBACKS = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash-lite'];
@@ -74,7 +78,11 @@ function buildCoachUserPrompt(chatHistory, difficulty = 'medium') {
     role: m.role === 'her' ? 'assistant' : 'user',
     content: m.content
   }));
-  return buildCoachUserPromptWithDifficulty(hist, difficulty);
+  let prompt = buildCoachUserPromptWithDifficulty(hist, difficulty);
+  if (normalizeDifficulty(difficulty) === 'hard') {
+    prompt += '\n\n' + buildHardGradingPromptBlock(chatHistory);
+  }
+  return prompt;
 }
 
 function coachJsonLooksTruncated(text, finishReason) {
@@ -105,15 +113,15 @@ function safeParseCoachJson(raw) {
   return JSON.parse(text.slice(start, end + 1));
 }
 
-function normalizeCoachResult(parsed, difficulty = 'medium') {
+function normalizeCoachResult(parsed, difficulty = 'medium', chatHistory = []) {
   let score = Number(parsed?.score);
   if (!Number.isFinite(score)) score = 50;
   if (score <= 10 && score >= 0) score = score * 10;
   score = Math.max(0, Math.min(100, Math.round(score)));
 
   const level = normalizeDifficulty(difficulty);
-  if (level === 'hard' && score > 55) {
-    score = Math.round(55 + (score - 55) * 0.65);
+  if (level === 'hard') {
+    score = applyHardScoreCaps(score, chatHistory);
   } else if (level === 'easy' && score < 40 && score > 0) {
     score = Math.min(100, score + 12);
   }
@@ -186,7 +194,7 @@ async function runCoachFeedback(chatHistory, difficulty = 'medium') {
   const level = normalizeDifficulty(difficulty);
   const raw = await geminiCoachComplete(buildCoachUserPrompt(hist, level), level);
   const parsed = safeParseCoachJson(raw);
-  return normalizeCoachResult(parsed, level);
+  return normalizeCoachResult(parsed, level, hist);
 }
 
 module.exports = {

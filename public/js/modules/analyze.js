@@ -1,6 +1,6 @@
 import { SIM_DIFFICULTY_LEVELS, getSimLevel } from '../data/sim-difficulty.js';
 import { setAnalyzing, assertChatMode } from '../simulator-state.js';
-import { chatReplyText } from '../chat-reply.js';
+import { chatReplyText, stripThinkingLeakage } from '../chat-reply.js';
 import { requestSessionAnalysis } from '../simulation-api.js';
 
 function startPsychLoader(el, opts) {
@@ -162,11 +162,14 @@ export function initAnalyze(container) {
     chatEndBtn.disabled = userTurns < MIN_USER_TURNS || loading;
   }
   function appendBubble(text, who) {
+    const clean =
+      who === 'her' ? stripThinkingLeakage(text) : String(text || '').trim();
+    if (who === 'her' && !clean) return;
     const row = document.createElement('div');
     row.className = `chat-row chat-row--${who}`;
     const bubble = document.createElement('div');
     bubble.className = `chat-bubble chat-bubble--${who}`;
-    bubble.textContent = text;
+    bubble.textContent = clean;
     row.appendChild(bubble);
     chatThread.appendChild(row);
     scrollThread();

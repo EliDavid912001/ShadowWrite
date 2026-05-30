@@ -22,16 +22,29 @@ function normalizeRelationshipStage(stage) {
 const ANALYZE_SYSTEM = `בחור ישראלי 26 בוואטסאפ. לא AI. אלפא = Tactician: עברית מושלמת, 3-10 מילים, קסם מחושב + push-pull + ולידציה מותנית. סמכות מוחלטת, חלק, חידתי. בלי תחנונים/התנצלות. פרידה=חתוך אדיש.`;
 
 /** Injected into 4-Answers system prompt (promptManager SCENARIO_PROMPT) */
-const ALPHA_ARCHETYPE_BLOCK = `═══ ALPHA (אלפא — THE TACTICIAN) — HIGHEST PRIORITY (read first) ═══
-HEBREW QUALITY (non-negotiable): The "alpha" field MUST be 100% flawless native Israeli Hebrew. Zero typos, zero calques, zero AI-formal words (אשמח, בוודאי, ניתן, מדוע, היכן, תוכניותיך). If it sounds robotic — rewrite before output.
+const ALPHA_ARCHETYPE_BLOCK = `═══ ALPHA (אלפא — HIGH-VALUE MOVE) — HIGHEST PRIORITY (read first) ═══
+CLARITY OVER COMPLEXITY: The user must understand instantly. Zero typos, zero ambiguous phrasing, zero cryptic riddles. If you use push-pull, explain WHY it works in the TIP — short, punchy, plain Hebrew (≤10 words in the tip).
 
-PSYCHOLOGY: Calculated charm + dark psychology. He is NOT dry, NOT insulting on first contact. He uses TACTICAL AFFECTION and CONDITIONAL VALIDATION to lower her defenses and captivate her — but always from a position of absolute authority and high value. Every line either gives a tiny "win" then withdraws (push-pull), or makes an observation that subtly tests her ("יש בך משהו...", "נראה אם...").
+HEBREW GRAMMAR (non-negotiable):
+• MOVE (to her): feminine forms where needed — לכי, תעשי, מעניינת, שווה את זה.
+• TIP (to him, the app user): masculine coaching — תגיד, תשלח, תשמור, תישאר. Never "תגידי" in the tip.
+• Dative "to you" for her = לך — NEVER "מתאים לכי" / "שווה לכי" (wrong). Only imperative "go" = לכי.
+• Zero AI-formal words: אשמח, בוודאי, ניתן, מדוע, היכן, תוכניותיך.
 
-TONE: Smooth, highly confident, engaging, slightly mysterious. He LEADS the frame completely. Never defensive, never explaining, never chasing.
+MANDATORY TWO-PART FORMAT (one JSON string, separator exactly " — "):
+PART 1 — THE MOVE (3-12 words): The exact line he sends her. High-value, dominant, clear — not a puzzle.
+PART 2 — THE TIP (4-14 words): Coaching to him. One punchy reason + delivery note.
+Example: "לא חושב, יודע — משפט זה יוצר מתח. תגיד את זה בביטחון"
+Example: "יש בך וייב שקשה להתעלם ממנו — push-pull קל. תשמור על קצב, בלי להסביר"
+Breakup: MOVE may stand alone ("סגור בהצלחה") OR add micro-tip ("סגור בהצלחה — אל תמשיך לדבר").
 
-STRUCTURE: 3 to 10 words. Single line. NO period at end.
+PSYCHOLOGY: Calculated charm + conditional validation from absolute authority. The MOVE leads the frame; the TIP teaches the tactic in one breath.
 
-EMOJIS: Avoid emojis in Alpha — the power is in the words. A single 😉 is tolerated, never anything desperate.
+TONE: Smooth, confident, engaging — never defensive, never chasing, never long explanations inside the MOVE.
+
+TOTAL LENGTH: up to 26 words combined. NO period at the very end.
+
+EMOJIS: Avoid in Alpha — power is in words. Single 😉 tolerated only in MOVE, never desperate.
 
 PET NAMES (kicking in by stage):
 • beginning → NO pet names yet (קטנטונת/מתוקה/קטנה שלי forbidden — too early, weakens frame).
@@ -54,8 +67,10 @@ FORBIDDEN FOR ALPHA (these = instant Beta):
 • Apologies/begging: "סליחה", "סורי", "מצטער", "מתנצל", "בבקשה תני הזדמנות".
 • Period at end. Multiple lines.`;
 
-const ALPHA_MIN_WORDS = 3;
-const ALPHA_MAX_WORDS = 10;
+/** MOVE + TIP (separated by " — ") */
+const ALPHA_MIN_WORDS = 6;
+const ALPHA_MAX_WORDS = 26;
+const ALPHA_TIP_SEP = ' — ';
 
 const VALIDATION_BY_STAGE = {
   beginning: [
@@ -88,9 +103,9 @@ const DOMESTIC_BY_STAGE = {
 const HEAVY_NICKNAME_RE = /קטנה שלי|חיים שלי|נשמה שלי|אהובה שלי|הכל שלי/i;
 
 const BREAKUP_ALPHA_FALLBACKS = [
-  'סגור בהצלחה',
-  'הכל טוב אחלה חיים',
-  'קיבלתי ביי'
+  'סגור בהצלחה — אל תמשיך לדבר, סגור את השיחה',
+  'הכל טוב אחלה חיים — בלי לרדוף אחריה',
+  'קיבלתי ביי — תישאר אדיש, זה שומר על הערך'
 ];
 
 const BREAKUP_SITUATION_RE =
@@ -314,9 +329,9 @@ function enforceAlphaRules(situation, responses, relationshipStage) {
     demand: 'לא ככה זה עובד פה',
     small_talk: 'יום עמוס, נדבר בערב',
     green_light: 'סגור, אוסף אותך בערב',
-    frame_test: 'לא חושב, יודע — תבחני',
-    dry_laugh: 'נחנקת שם או שיש לך משהו',
-    general: 'יש בך משהו, נראה לאן זה הולך'
+    frame_test: 'לא חושב, יודע — משפט זה יוצר מתח. תגיד בביטחון',
+    dry_laugh: 'נחנקת שם או שיש לך משהו — עקיצה קלה. תשלח בלי להסביר',
+    general: 'יש בך משהו, נראה לאן זה הולך — שמור על מסתורין. תגיד בקצב רגוע'
   };
 
   if (
@@ -339,14 +354,27 @@ function enforceAlphaRules(situation, responses, relationshipStage) {
   return responses;
 }
 
+function alphaMissingHighValueTip(alpha) {
+  const a = String(alpha || '').trim();
+  if (!a) return true;
+  if (/\s—\s/.test(a) || /\s\|\s/.test(a)) return false;
+  if (/^סגור|^קיבלתי|^הכל טוב/i.test(a) && a.split(/\s+/).length <= 5) {
+    return false;
+  }
+  return true;
+}
+
 function responsesLookRobotic(responses) {
   const a = responses.alpha || '';
   const words = a.split(/\s+/).filter(Boolean).length;
   if (words > ALPHA_MAX_WORDS) return true;
+  if (words < ALPHA_MIN_WORDS && !/^סגור|^קיבלתי/i.test(a.trim())) return true;
+  if (alphaMissingHighValueTip(a)) return true;
   if (/\.$/.test(a.trim())) return true;
   if (FORBIDDEN_ALPHA_RE.test(a)) return true;
   if (WEAK_FLIRT_ALPHA_RE.test(a)) return true;
   if (ROBOTIC_VALIDATION_ALPHA_RE.test(a)) return true;
+  if (/מתאים\s+לכי|שווה\s+לכי|לכי\s+זה\s+עובד/i.test(a)) return true;
   if (/^היי יפה|מאמן|ארכיטיפ/i.test(a)) return true;
   return false;
 }
@@ -371,6 +399,8 @@ module.exports = {
   ALPHA_ARCHETYPE_BLOCK,
   ALPHA_MAX_WORDS,
   ALPHA_MIN_WORDS,
+  ALPHA_TIP_SEP,
+  alphaMissingHighValueTip,
   ANALYZE_SYSTEM,
   normalizeRelationshipStage,
   buildAnalyzePrompt,

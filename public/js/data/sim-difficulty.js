@@ -19,9 +19,9 @@ export const SIM_DIFFICULTY_LEVELS = [
   {
     id: 'hard',
     label: 'קשה',
-    sub: 'קרה · התנגדות מקסימלית',
+    sub: 'ספיר · אתגר שובב · מוותרת אחרי frame חזק',
     personaName: 'ספיר',
-    opener: 'היי',
+    opener: 'היי, אז מי אתה ולמה אני אמורה לרצות לדבר איתך?',
     cssClass: 'sim-diff--hard'
   }
 ];

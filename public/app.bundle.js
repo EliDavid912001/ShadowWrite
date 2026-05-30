@@ -2,6 +2,77 @@
 (function () {
   'use strict';
 
+  var COPY_ICON_SVG =
+    '<svg class="copy-btn__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
+    '<rect x="8" y="2" width="12" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.75"/>' +
+    '<path d="M6 2h8a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="1.75"/>' +
+    '</svg>';
+
+  function stripThinkingLeakage(text) {
+    var t = String(text || '').trim();
+    if (!t) return '';
+    t = t.replace(/<think[\s\S]*?<\/think>/gi, '').replace(/<thinking[\s\S]*?<\/thinking>/gi, '');
+    while (/\bTHINK\b/i.test(t)) {
+      var idx = t.search(/\bTHINK\b/i);
+      var nextHe = t.slice(idx).search(/\n[\u0590-\u05FF]/);
+      if (nextHe > 0) t = (t.slice(0, idx) + t.slice(idx + nextHe)).trim();
+      else t = t.replace(/\bTHINK\b[\s\S]*/i, '').trim();
+    }
+    t = t.replace(/\bTHOUGHT:\s*/gi, '');
+    var lines = t.split(/\n+/).map(function (l) { return l.trim(); }).filter(function (l) {
+      if (!l || /^(THINK\b|THOUGHT:|The user|I'm still|FROZEN)/i.test(l)) return false;
+      var he = (l.match(/[\u0590-\u05FF]/g) || []).length;
+      var en = (l.match(/[a-zA-Z]/g) || []).length;
+      if (en > 35 && he < 8) return false;
+      return true;
+    });
+    t = (lines.length ? lines.join(' ') : t).replace(/\s{2,}/g, ' ').trim();
+    var heTotal = (t.match(/[\u0590-\u05FF]/g) || []).length;
+    var enTotal = (t.match(/[a-zA-Z]/g) || []).length;
+    if (enTotal > 45 && heTotal < 12) return '';
+    return t;
+  }
+
+  function wireCopyButton(btn, text) {
+    if (!btn) return;
+    btn.type = 'button';
+    btn.className = 'copy-btn copy-btn--labeled';
+    btn.innerHTML = '<span class="copy-btn__label">העתק</span>' + COPY_ICON_SVG;
+    btn.setAttribute('aria-label', 'העתק ללוח');
+    btn.setAttribute('title', 'העתק');
+    btn.onclick = function () {
+      var value = String(text || '');
+      navigator.clipboard.writeText(value).then(
+        function () {
+          btn.classList.add('copied');
+          setTimeout(function () { btn.classList.remove('copied'); btn.blur(); }, 1400);
+        },
+        function () {
+          btn.classList.add('copy-btn--failed');
+          setTimeout(function () { btn.classList.remove('copy-btn--failed'); }, 1200);
+        }
+      );
+    };
+  }
+
+  function showUiHint(el, message) {
+    if (!el) return;
+    el.textContent = message || '';
+    el.className = 'ui-hint-banner show';
+  }
+
+  function showUiError(el, message) {
+    if (!el) return;
+    el.textContent = message || '';
+    el.className = 'err-banner ui-hint-banner ui-hint-banner--error show';
+  }
+
+  function hideUiMessage(el) {
+    if (!el) return;
+    el.classList.remove('show', 'ui-hint-banner', 'ui-hint-banner--error', 'err-banner');
+    el.textContent = '';
+  }
+
   if (location.protocol === 'file:') {
     document.body.innerHTML =
       '<div style="padding:24px;text-align:center;font-family:sans-serif;color:#ff2a54;max-width:400px;margin:40px auto">' +
@@ -94,10 +165,10 @@
   window.getIsVIP = getIsVIP;
 
   function chatReplyText(data) {
-    if (typeof data === 'string') return data.trim();
+    if (typeof data === 'string') return stripThinkingLeakage(data);
     if (!data || typeof data !== 'object') return '';
     var raw = data.response || data.reply || data.woman_response || data.text || data.message || '';
-    return String(raw).trim();
+    return stripThinkingLeakage(String(raw));
   }
 
   const PERSONAS = {
@@ -251,7 +322,7 @@
       '<button type="button" class="rel-stage-chip" data-stage="deep">💍 קשר רציני (4+)</button></div>' +
       '<div class="input-wrap"><textarea class="text-input" id="scenarioInput" rows="2" placeholder="תאר מה קרה..." maxlength="600"></textarea></div>' +
       '<button type="button" class="btn-primary" id="scenarioSubmit">⚡ קבל 4 ארכיטיפים</button>' +
-      '<div class="err-banner" id="scenarioErr"></div>' +
+      '<div id="scenarioErr" class="ui-hint-banner" role="status" aria-live="polite"></div>' +
       '<div class="psych-scan-host hidden" id="scenarioLoad" aria-live="polite"></div>' +
       '<div class="persona-grid hidden" id="scenarioResults"></div>' +
       '<div class="sit-cards" id="scenarioPresets" style="margin-top:20px"></div>';
@@ -327,12 +398,11 @@
       var situation = input.value.trim();
       if (loading) return;
       if (!situation) {
-        errEl.textContent = '⚠️ תאר סיטואציה לפני שליחה';
-        errEl.classList.add('show');
+        showUiHint(errEl, 'תאר סיטואציה לפני שליחה');
         return;
       }
       loading = true;
-      errEl.classList.remove('show');
+      hideUiMessage(errEl);
       resultsEl.classList.add('hidden');
       loadEl.classList.add('hidden');
       btnPsychStart(submitBtn);
@@ -353,21 +423,23 @@
         ['alpha', 'beta', 'witty', 'friendly'].forEach(function (key, i) {
           var p = PERSONAS[key];
           var txt = resp[key] || '—';
+          var isAlpha = key === 'alpha';
           var card = document.createElement('div');
-          card.className = 'persona-card ' + key + ' show';
-          card.innerHTML = '<div class="persona-head"><span class="persona-tag">' + p.label + '</span><span style="font-size:9px;color:var(--text-muted)">' + p.sub + '</span></div>' +
-            '<div class="persona-body">' + esc(txt) + '</div><div class="persona-foot"><button type="button" class="copy-btn">העתק</button></div>';
-          card.querySelector('.copy-btn').onclick = function () {
-            navigator.clipboard.writeText(txt);
-            this.textContent = 'הועתק ✓';
-          };
+          card.className = 'persona-card ' + key + ' show' + (isAlpha ? ' alpha-card' : '');
+          card.innerHTML =
+            '<div class="persona-head"><span class="persona-tag">' + p.label + '</span>' +
+            (isAlpha
+              ? '<span class="alpha-card__badge">טיפ מומחה</span>'
+              : '<span class="persona-sub">' + p.sub + '</span>') +
+            '</div><div class="persona-body">' + esc(txt) + '</div>' +
+            '<div class="persona-foot"><button type="button" class="copy-btn"></button></div>';
+          wireCopyButton(card.querySelector('.copy-btn'), txt);
           resultsEl.appendChild(card);
         });
       } catch (e) {
         if (!isAuthGateError(e)) {
           console.error('[scenario] request failed', e);
-          errEl.textContent = '⚠️ ' + (e.message || e);
-          errEl.classList.add('show');
+          showUiError(errEl, e.message || String(e));
         }
       } finally {
         btnPsychStop(submitBtn);
@@ -385,7 +457,7 @@
   var SIM_LEVELS = [
     { id: 'easy', label: 'קל', sub: 'חמה גבוהה · רוצה דייט', persona: 'מאיה', opener: 'היי, מה קורה?', css: 'sim-diff--easy' },
     { id: 'medium', label: 'בינוני', sub: 'מעורב · בודקת מסגרת', persona: 'ספיר', opener: 'היי, מה קורה?', css: 'sim-diff--medium' },
-    { id: 'hard', label: 'קשה', sub: 'קרה · התנגדות מקסימלית', persona: 'ספיר', opener: 'היי', css: 'sim-diff--hard' }
+    { id: 'hard', label: 'קשה', sub: 'ספיר · אתגר שובב · מוותרת אחרי frame חזק', persona: 'ספיר', opener: 'היי, אז מי אתה ולמה אני אמורה לרצות לדבר איתך?', css: 'sim-diff--hard' }
   ];
 
   function simLevelCfg(id) {
@@ -449,11 +521,13 @@
     }
     function setComposer(on) { if (chatInput) chatInput.disabled = !on; if (chatSend) chatSend.disabled = !on; }
     function appendBubble(text, who) {
+      var clean = who === 'her' ? stripThinkingLeakage(text) : String(text || '').trim();
+      if (who === 'her' && !clean) return;
       var row = document.createElement('div');
       row.className = 'chat-row chat-row--' + who;
       var b = document.createElement('div');
       b.className = 'chat-bubble chat-bubble--' + who;
-      b.textContent = text;
+      b.textContent = clean;
       row.appendChild(b);
       chatThread.appendChild(row);
       scrollThread();

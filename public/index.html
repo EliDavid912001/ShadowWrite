@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Heebo:wght@300;400;500;700&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=140">
+  <link rel="stylesheet" href="/css/styles.css?v=142">
   <style>
     /* ═══ Dark Script · Pro-Max Design System ═══
        OLED + Liquid Glass + 3D Hyperrealism */
@@ -444,11 +444,16 @@
 
     .tod-player-tag,
     .ch-btn,
-    .persona-card {
+    .persona-card:not(.alpha-card) {
       background: rgba(20, 20, 20, 0.55) !important;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid var(--glass-border) !important;
+    }
+
+    .persona-card.alpha-card {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     .ch-btn.active {
@@ -563,6 +568,6 @@
   <script src="/js/psych-loader.js?v=129"></script>
   <script type="module" src="/js/auth.js?v=11"></script>
   <script type="module" src="/js/app.js?v=2"></script>
-  <script src="/app.bundle.js?v=139" defer></script>
+  <script src="/app.bundle.js?v=142" defer></script>
 </body>
 </html>
