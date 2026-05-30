@@ -286,10 +286,11 @@
       loadEl.classList.add('hidden');
       btnPsychStart(submitBtn);
       try {
-        var data = await postJson('/api/scenario', {
+        var data = await postJson('/api/generate-script', {
           situation: situation,
           channel: curCh,
-          stage: selectedStage
+          stage: selectedStage,
+          isVip: window.AUTH && window.AUTH.isVip && window.AUTH.isVip()
         });
         console.log('[scenario] API response', data);
         var resp = normalizeScenarioResponses(data);

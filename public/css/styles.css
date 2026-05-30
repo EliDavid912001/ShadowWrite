@@ -82,6 +82,50 @@ body {
   flex-shrink: 0;
 }
 
+/* — Live credit readout (Firestore sync) — */
+.credit-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 18px 10px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: rgba(234, 192, 124, 0.06);
+  border: 1px solid rgba(234, 192, 124, 0.2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.credit-display--hidden { display: none; }
+.credit-display--vip {
+  border-color: rgba(255, 215, 0, 0.45);
+  background: rgba(255, 215, 0, 0.08);
+}
+.credit-display__label { color: var(--text-muted); }
+#creditCount {
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  min-width: 1.5ch;
+}
+.credit-display--vip #creditCount { color: #ffd700; }
+
+.vip-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #1a1206;
+  background: linear-gradient(135deg, #ffd700, #c9a04a);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+}
+.vip-tag--admin {
+  background: linear-gradient(135deg, #fff8d2, #ffd700 55%, #c9a04a);
+}
+
 .brand-mini {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 22px;

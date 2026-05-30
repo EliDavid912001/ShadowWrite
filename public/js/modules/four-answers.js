@@ -199,10 +199,11 @@ export function initFourAnswers(container) {
     startButtonPsychLoader(submitBtn);
 
     try {
-      const data = await postJson('/api/scenario', {
+      const data = await postJson('/api/generate-script', {
         situation,
         channel: curCh,
-        stage: selectedStage
+        stage: selectedStage,
+        isVip: window.AUTH?.isVip?.() === true
       });
       console.log('[scenario] API response', data);
       const responses = normalizeScenarioResponses(data);

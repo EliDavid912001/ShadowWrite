@@ -1,7 +1,7 @@
 {
   "name": "dark-script-api",
   "version": "1.0.0",
-  "description": "The Dark Script - Dating AI Backend",
+  "description": "The Dark Script — Express API + Gemini AI backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

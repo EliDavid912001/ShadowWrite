@@ -155,6 +155,15 @@ async function createUserProfileIfMissing(user) {
     }
   } else {
     console.log('User profile already exists.');
+    const data = userSnap.data() || {};
+    const updates = {};
+    if (user.email && data.email !== user.email) updates.email = user.email;
+    const shouldVip = isAdminUser(user);
+    if (data.isVip !== shouldVip) updates.isVip = shouldVip;
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(userRef, updates);
+      console.log('[auth] User profile updated:', Object.keys(updates).join(', '));
+    }
   }
 }
 
@@ -245,7 +254,8 @@ function startCreditsListener(user) {
   stopCreditsListener();
   if (isAdminUser(user)) {
     currentCredits = Infinity;
-    renderCounter({ creditsKnown: true, admin: true });
+    renderCounter({ creditsKnown: true, admin: true, isVip: true });
+    syncCreditDisplay({ credits: '∞', isVip: true, admin: true });
     return;
   }
   const ref = doc(db, 'users', user.uid);
@@ -255,7 +265,9 @@ function startCreditsListener(user) {
       if (!snap.exists()) return;
       const data = snap.data() || {};
       currentCredits = Number(data.credits) || 0;
-      renderCounter({ creditsKnown: true, admin: false, credits: currentCredits });
+      const isVip = !!data.isVip || isAdminUser(user);
+      renderCounter({ creditsKnown: true, admin: false, credits: currentCredits, isVip });
+      syncCreditDisplay({ credits: currentCredits, isVip, admin: false });
     },
     (err) => {
       console.error('[auth] credits listener error', err);
@@ -267,6 +279,32 @@ function stopCreditsListener() {
   if (unsubCredits) {
     unsubCredits();
     unsubCredits = null;
+  }
+  syncCreditDisplay({ credits: 0, isVip: false, admin: false, signedOut: true });
+}
+
+/** Updates #creditCount / #vipTag when Firestore or auth state changes */
+function syncCreditDisplay({ credits, isVip, admin, signedOut, dev }) {
+  const countEl = document.getElementById('creditCount');
+  const displayEl = document.getElementById('creditDisplay');
+  const vipTag = document.getElementById('vipTag');
+
+  if (countEl) {
+    if (dev) countEl.textContent = '—';
+    else if (signedOut) countEl.textContent = '0';
+    else if (admin) countEl.textContent = '∞';
+    else countEl.textContent = String(Math.max(0, Number(credits) || 0));
+  }
+
+  const showVip = !signedOut && (admin || isVip);
+  if (vipTag) {
+    vipTag.hidden = !showVip;
+    vipTag.textContent = admin ? '👑 VIP' : '✦ VIP';
+    vipTag.classList.toggle('vip-tag--admin', !!admin);
+  }
+  if (displayEl) {
+    displayEl.classList.toggle('credit-display--vip', showVip);
+    displayEl.classList.toggle('credit-display--hidden', !!signedOut);
   }
 }
 
@@ -320,7 +358,7 @@ function attachLogoutHandler() {
 /**
  * Deduct 1 credit from users/{userId}.
  * Returns true if deduction succeeded, false if balance is 0 or doc missing.
- * Admin (ADMIN_EMAIL) always returns true without touching Firestore.
+ * VIP users (isVip === true in Firestore, or ADMIN_EMAIL) get free access — no deduction.
  */
 async function deductCredit(userId) {
   if (!ready || !db) {
@@ -330,6 +368,7 @@ async function deductCredit(userId) {
   if (!userId) return false;
 
   if (currentUser?.uid === userId && isAdminUser(currentUser)) {
+    console.log('[auth] Admin user - credit not deducted');
     return true;
   }
 
@@ -337,6 +376,12 @@ async function deductCredit(userId) {
 
   try {
     const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists() && userSnap.data().isVip) {
+      console.log('VIP user - credit not deducted');
+      return true; // ה-VIP מקבל גישה חופשית
+    }
+
     const credits = userSnap.exists() ? Number(userSnap.data().credits) || 0 : 0;
 
     if (credits <= 0) {
@@ -687,6 +732,7 @@ function boot() {
   const ok = initFirebase();
   if (!ok) {
     renderCounter({ creditsKnown: false });
+    syncCreditDisplay({ credits: 0, isVip: false, dev: true });
     updateAuthGuard();
     return;
   }
@@ -706,7 +752,15 @@ window.AUTH = {
   isSignedIn: () => !!currentUser,
   currentUser: () => currentUser,
   isAdmin: () => isAdminUser(currentUser),
+  isVip: () => {
+    if (isAdminUser(currentUser)) return true;
+    const tag = document.getElementById('vipTag');
+    return tag ? !tag.hidden : false;
+  },
   credits: () => currentCredits,
+  getDb: () => db,
+  getAuth: () => auth,
+  syncCreditDisplay,
   waitForInitialAuth,
   registerWithEmail,
   loginWithEmail,

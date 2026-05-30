@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Heebo:wght@300;400;500;700&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css?v=138">
+  <link rel="stylesheet" href="/css/styles.css?v=139">
   <style>
     /* ═══ Dark Script · Pro-Max Design System ═══
        OLED + Liquid Glass + 3D Hyperrealism */
@@ -513,6 +513,12 @@
       </div>
     </header>
 
+    <div id="creditDisplay" class="credit-display" aria-live="polite">
+      <span id="vipTag" class="vip-tag" hidden>👑 VIP</span>
+      <span class="credit-display__label">Credits:</span>
+      <span id="creditCount">0</span>
+    </div>
+
     <main>
       <section id="view-analyze" class="view active" aria-label="משחק 4 תשובות">
         <div id="mount-analyze"></div>
@@ -554,7 +560,8 @@
   <script src="/js/data/truth-dare-decks.js" defer></script>
   <script src="/js/truth-or-dare-game.js" defer></script>
   <script src="/js/psych-loader.js?v=129"></script>
-  <script type="module" src="/js/auth.js?v=9"></script>
-  <script src="/app.bundle.js?v=135" defer></script>
+  <script type="module" src="/js/auth.js?v=11"></script>
+  <script type="module" src="/js/app.js?v=2"></script>
+  <script src="/app.bundle.js?v=136" defer></script>
 </body>
 </html>
