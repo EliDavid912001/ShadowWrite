@@ -212,7 +212,11 @@ export function initAnalyze(container) {
     setComposerEnabled(false);
     setTyping(true);
     try {
-      const res = await fetch('/api/chat', {
+      const chatUrl =
+        (typeof window !== 'undefined' && window.API_CONFIG?.apiUrl)
+          ? window.API_CONFIG.apiUrl('/api/chat')
+          : '/api/chat';
+      const res = await fetch(chatUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

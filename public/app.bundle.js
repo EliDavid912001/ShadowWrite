@@ -133,17 +133,67 @@
     return !!err && (err.name === 'AuthGateError' || err.constructor?.name === 'AuthGateError');
   }
 
-  async function postJson(url, body) {
+  function apiUrl(path) {
+    if (typeof path === 'string' && /^https?:\/\//i.test(path)) return path;
+    if (window.API_CONFIG && typeof window.API_CONFIG.apiUrl === 'function') {
+      return window.API_CONFIG.apiUrl(path);
+    }
+    return path;
+  }
+
+  function sleep(ms) {
+    return new Promise(function (r) { setTimeout(r, ms); });
+  }
+
+  function isRetryableHttp(status) {
+    return status === 429 || status === 502 || status === 503 || status === 504;
+  }
+
+  function isRetryableErr(err) {
+    if (!err) return false;
+    if (err.name === 'TypeError') return true;
+    return /network|failed to fetch|load failed|fetch/i.test(String(err.message || ''));
+  }
+
+  async function postJson(url, body, opts) {
+    opts = opts || {};
+    var maxAttempts = opts.maxAttempts || 3;
+    var retryDelay = opts.retryDelayMs || 2000;
+    var lastErr;
+
     await aiFetchGate();
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    let data = {};
-    try { data = await res.json(); } catch { data = { error: 'תשובה לא תקינה' }; }
-    if (!res.ok) throw new Error(data.error || 'שגיאה ' + res.status);
-    return data;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        var res = await fetch(apiUrl(url), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        var data = {};
+        try { data = await res.json(); } catch (e) { data = { error: 'תשובה לא תקינה' }; }
+        if (!res.ok) {
+          var httpErr = new Error(data.error || 'שגיאה ' + res.status);
+          if (attempt < maxAttempts && isRetryableHttp(res.status)) {
+            console.warn('[api] retry', attempt, res.status);
+            await sleep(retryDelay);
+            continue;
+          }
+          throw httpErr;
+        }
+        return data;
+      } catch (e) {
+        lastErr = e;
+        if (attempt < maxAttempts && isRetryableErr(e)) {
+          console.warn('[api] retry', attempt, e.message);
+          await sleep(retryDelay);
+          continue;
+        }
+        throw e;
+      }
+    }
+    throw lastErr || new Error('בקשה נכשלה');
   }
 
   function $(id) { return document.getElementById(id); }
@@ -201,7 +251,8 @@
       '<button type="button" class="rel-stage-chip" data-stage="deep">💍 קשר רציני (4+)</button></div>' +
       '<div class="input-wrap"><textarea class="text-input" id="scenarioInput" rows="2" placeholder="תאר מה קרה..." maxlength="600"></textarea></div>' +
       '<button type="button" class="btn-primary" id="scenarioSubmit">⚡ קבל 4 ארכיטיפים</button>' +
-      '<div class="err-banner" id="scenarioErr"></div><div class="psych-scan-host hidden" id="scenarioLoad" aria-live="polite"></div>' +
+      '<div class="err-banner" id="scenarioErr"></div>' +
+      '<div class="psych-scan-host hidden" id="scenarioLoad" aria-live="polite"></div>' +
       '<div class="persona-grid hidden" id="scenarioResults"></div>' +
       '<div class="sit-cards" id="scenarioPresets" style="margin-top:20px"></div>';
 
@@ -535,7 +586,7 @@
       chatTyping.classList.remove('hidden');
       scrollThread();
       try {
-        var res = await fetch('/api/chat', {
+        var res = await fetch(apiUrl('/api/chat'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

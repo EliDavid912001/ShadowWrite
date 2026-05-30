@@ -1,5 +1,8 @@
 /**
- * 4 Answers — POST /api/scenario only (Google Gemini)
+ * 4 Answers — POST /api/generate-script & /api/scenario (Google Gemini)
+ *
+ * System persona: elite social-dynamics / behaviorism expert (see promptManager SCENARIO_PROMPT).
+ * Weak input → Meta-Commentary in Alpha + full archetype set (never reject).
  */
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const {
@@ -265,15 +268,30 @@ function stageForAlphaRules(scenarioStage) {
   return 'beginning';
 }
 
+/** True when user input is too thin for a rich scenario (triggers Meta-Commentary protocol). */
+function isWeakSituationInput(text) {
+  const t = String(text || '').trim();
+  if (!t) return true;
+  if (t.length < 10) return true;
+  if (/^(היי|הי|hey|hi|hello|שלום|test|טסט|מה נשמה|מה קורה|מה נשמע)\.?$/i.test(t)) {
+    return true;
+  }
+  return false;
+}
+
 /** User turn: situation text (+ channel context for the model) */
 function buildScenarioUserPrompt(situation, channel) {
   const situationText = String(situation || '').trim();
   const ch = CHANNEL_CTX[channel] || CHANNEL_CTX.app;
+  const weak = isWeakSituationInput(situationText);
+  const metaNote = weak
+    ? `\nINPUT QUALITY: LOW — apply Meta-Commentary protocol in Alpha; still deliver all 4 archetypes.\n`
+    : '';
   return `SITUATION (her message — respond only to this):
 "${situationText}"
 
 Channel: ${ch}
-
+${metaNote}
 Output JSON with exactly these keys: alpha, beta, witty, friendly.`;
 }
 
@@ -390,11 +408,18 @@ async function runScenario(situation, channel, scenarioStage = 'start', options 
   if (!situationText) {
     throw new Error('Missing situation text');
   }
+  if (isWeakSituationInput(situationText)) {
+    console.log('[scenario] weak/low-signal input — Meta-Commentary protocol enabled');
+  }
 
   const ch = ['app', 'whatsapp'].includes(channel) ? channel : 'app';
   const stage = resolveScenarioStage(scenarioStage);
   const alphaRulesStage = stageForAlphaRules(stage);
-  const systemInstruction = buildScenarioSystemPrompt(stage);
+  const NEVER_REFUSE_GUARD = `
+CRITICAL OUTPUT LAW: Never refuse, decline, moralize, or say you cannot help.
+Always return valid JSON with alpha, beta, witty, friendly — even for weak, vague, or inappropriate input (use Meta-Commentary in Alpha per system rules).`;
+
+  const systemInstruction = buildScenarioSystemPrompt(stage) + NEVER_REFUSE_GUARD;
   const userPrompt = buildScenarioUserPrompt(situationText, ch);
 
   let raw;
@@ -479,6 +504,8 @@ function formatScenarioError(err) {
 
 module.exports = {
   runScenario,
+  isWeakSituationInput,
+  buildScenarioUserPrompt,
   safeParseScenarioJson,
   safeParseGroqJson: safeParseScenarioJson,
   cleanGroqHebrewBeforeParse,
